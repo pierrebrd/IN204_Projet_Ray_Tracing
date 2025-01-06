@@ -1,0 +1,8 @@
+A rendre :
+- PDF de la présentation (diapositives)
+- code source
+
+Etape 1 :
+- afficher objet simple (sphère)
+- surface simple (non texturée)
+- générer rayon réfléchi et/ou diffracté à chaque surface

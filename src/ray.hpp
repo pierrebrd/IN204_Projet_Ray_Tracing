@@ -11,6 +11,10 @@ Ce fichier contiendra les classes concernant les rayons et leur suivi
 
 
 
+struct ray{
+    unsigned 
+}
+
 
 
 

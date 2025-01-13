@@ -65,6 +65,11 @@ Contexte d'utilisation :
 - L'utilisateur précise dans un fichier texte la position de la caméra et des objets.
 - Le programme génère un fichier image PPM que l'utilisateur peut lire grâce à un outil externe.
 
+Choix d'utiliser PPM :
+- bien qu'inefficace comme format (contient bcp d'informations que l'oeil ne discerne pas)
+- it is very easy to write and analyze programs to process this format
+- plus d'informations : https://netpbm.sourceforge.net/doc/ppm.html
+
 ### Analyse fonctionnelle
 
 Fonctions :
@@ -83,7 +88,7 @@ Différentes classes :
 - Camera : information sur la caméra (position, direction)
 - Scene : ensemble des objets de la scène
 - LightSource : objet représentant une source de lumière. On pourra prendre une source de lumière ponctuelle
-- Object : classe mère de tous les objets:
+- Object : classe mère de tous les objets; forme de la surface, texture de la surface
 - Des classes spécifiques à chaque objet
 - Ray : classe qui contient les informations sur les rayons (origine, direction, etc)
 - Une classe vecteur ????

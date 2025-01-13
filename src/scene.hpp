@@ -1,22 +1,9 @@
-
-
-
-
-
-
 #ifndef sceneHPP
 #define sceneHPP
 
+#include "objects.hpp"
 
-struct SCENE_BASE_OBJECT
-{
 
-}
-
-struct OBJECT_BASE_SURFACE
-{
-
-}
 
 
 

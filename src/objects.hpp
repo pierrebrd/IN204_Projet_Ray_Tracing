@@ -65,6 +65,7 @@ struct Angles_Spherical
 
 Vector_3D Angles_Spherical::to_vector() const {
     // Returns the vector corresponding to the angles in spherical coordinates
+    // We don't specify r : the norm of the vector is 1
     float x = std::sin(theta) * std::cos(phi);
     float y = std::sin(theta) * std::sin(phi);
     float z = std::cos(theta);
@@ -93,14 +94,13 @@ private:
     Vector_3D direction;
 
 public:
+    // Constructors
     Ray(float xo, float yo, float zo, float xd, float yd, float zd) : origin(xo, yo, zo), direction(xd, yd, zd) {}
     Ray(Point_3D ori, Vector_3D dir) : origin(ori), direction(dir) {};
 
     // Getters
     Point_3D get_origin() const { return origin; }
     Vector_3D get_direction() const { return direction; }
-
-
 
 };
 
@@ -131,7 +131,7 @@ public:
     }
 
     // Destructor :
-    ~Camera() {};
+    ~Camera() {}; //default destructor
 
     // Getters :
     Point_3D get_position() const { return position; }

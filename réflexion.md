@@ -95,3 +95,14 @@ Différentes classes :
 
 Où mettre les informations relatives à l'écran ? elles sont implicites dans les données de la caméra ???? Ça me parait pas mal, genre la caméra a une position, une direction d'observation, une résolution genre 600x400, et un angle de vue. On peut alors en déduire l'ensemble des rayons à lancer.
 
+
+
+
+#### Rayons et vecteurs
+
+Il faut faire attention aux unités (gradients, degrés pour les angles)
+
+#### Caméra 
+
+Dans `ray_launcher`, on doit faire attention à ne pas faire de division d'entiers unsigned, qui fausseraient les calculs. On doit donc faire des cast vers des flottants pour la résolution et le champ de vision.
+

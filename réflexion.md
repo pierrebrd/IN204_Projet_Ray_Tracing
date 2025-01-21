@@ -106,3 +106,5 @@ Il faut faire attention aux unités (gradients, degrés pour les angles)
 
 Dans `ray_launcher`, on doit faire attention à ne pas faire de division d'entiers unsigned, qui fausseraient les calculs. On doit donc faire des cast vers des flottants pour la résolution et le champ de vision.
 
+#### Plan : calcul de l'intersection avec un rayon
+Héritage ? Nécessité des opérateurs * (produit scalaire) et - entre deux Point_3D pour créer un vecteur.

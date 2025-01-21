@@ -27,15 +27,28 @@ struct Angles_Spherical; // We declare the class here to avoid circular dependen
 struct Vector_3D
 {
     // Represents a vector in 3D space
+    // Champs
     float x;
     float y;
     float z;
 
+    // Constructeurs
+        // à partir des coordonnées cartésiennes
     Vector_3D(float x_coord, float y_coord, float z_coord) : x(x_coord), y(y_coord), z(z_coord) {}
+    
+        // à partir de deux points Point_3D (P2-P1)
+    Vector_3D(Point_3D P1, Point_3D P2) : x(P2.x-P1.x), y(P2.y-P1.y), z(P2.z-P1.z) {};
 
+    // Méthodes
     float norm() const {
         // Returns the norm of the vector
         return std::sqrt(x * x + y * y + z * z);
+    }
+
+    float operator * (Vector_3D aRightVector){
+        // Définition du produit scalaire
+        Vector_3D aLeftVector = *this;
+        return aRightVector.x*aLeftVector.x + aRightVector.y*aLeftVector.y + aRightVector.z*aLeftVector.z;
     }
 
     void print() const {
@@ -193,17 +206,17 @@ public:
 class Plane : public Object
 {
     Point_3D origin;
-    Vector_3D vector1;
-    Vector_3D vector2;
+    Vector_3D normalVector;
 
 public:
     // Constructor
-    Plane(Point_3D  o, Vector_3D v1, Vector_3D v2) : origin(o), vector1(v1), vector2(v2) {};
+    Plane(Point_3D  o, Vector_3D nv) : origin(o), normalVector(nv) {};
 
     //Methods
     Point_3D find_intersection(Ray myRay) const {
-        myRay.get_direction();
-        Vector_3D normal = Vector_3D();
+        Point_3D rayOrigin = myRay.get_origin();
+        Vector_3D rayDirection = myRay.get_direction();
+        float t = (normalVector*(origin-rayOrigin)) / (normalVector*rayDirection);
     }
 };
 

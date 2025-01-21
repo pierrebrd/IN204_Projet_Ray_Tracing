@@ -10,5 +10,6 @@ int main() {
             ray.get_direction().to_angles().print();
         }
     }
+
     return 0;
 }

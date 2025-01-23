@@ -19,6 +19,11 @@ struct Point_3D
 
     Point_3D(float x_coord, float y_coord, float z_coord) : x(x_coord), y(y_coord), z(z_coord) {}
 
+    operator Vector_3D() const{
+        // Conversion de Point_3D en Vector_3D
+        return Vector_3D(x,y,z);
+    }    
+
 };
 
 struct Angles_Spherical; // We declare the class here to avoid circular dependencies
@@ -45,18 +50,40 @@ struct Vector_3D
         return std::sqrt(x * x + y * y + z * z);
     }
 
-    float operator * (Vector_3D aRightVector){
-        // Définition du produit scalaire
-        Vector_3D aLeftVector = *this;
-        return aRightVector.x*aLeftVector.x + aRightVector.y*aLeftVector.y + aRightVector.z*aLeftVector.z;
-    }
-
     void print() const {
         std::cout << "Vector: (" << x << ", " << y << ", " << z << ")\n";
     }
 
+    operator Point_3D() const{
+        // Conversion de Vector_3D en Point_3D
+        return Point_3D(x,y,z);
+    }
+
     Angles_Spherical to_angles() const; // We declare the method here to avoid circular dependencies
 };
+
+// Opérateurs globaux
+float operator * (Vector_3D aLeftVector, Vector_3D aRightVector){
+    // Définition du produit scalaire
+    return aRightVector.x*aLeftVector.x + aRightVector.y*aLeftVector.y + aRightVector.z*aLeftVector.z;
+}
+Vector_3D operator * (float aFloat, Vector_3D aRightVector){
+    // Multiplication par un scalaire
+    return Vector_3D(aFloat*aRightVector.x,aFloat*aRightVector.y,aFloat*aRightVector.z);
+}
+
+Vector_3D operator - (Vector_3D aLeftPoint, Vector_3D aRightPoint){
+    // Définition d'un vecteur à partir de deux points
+    Vector_3D vector = Vector_3D(aRightPoint.x - aLeftPoint.x, aRightPoint.y - aLeftPoint.y, aRightPoint.z - aLeftPoint.z);
+    return vector;
+}
+
+Vector_3D operator + (Vector_3D aLeftPoint, Vector_3D aRightVector){
+    // Somme d'un point et d'un vecteur
+    Vector_3D vector = Vector_3D(aLeftPoint.x + aRightVector.x, aLeftPoint.y + aRightVector.y, aLeftPoint.z + aRightVector.z);
+    return vector;
+}
+
 
 
 struct Angles_Spherical
@@ -216,7 +243,8 @@ public:
     Point_3D find_intersection(Ray myRay) const {
         Point_3D rayOrigin = myRay.get_origin();
         Vector_3D rayDirection = myRay.get_direction();
-        float t = (normalVector*(origin-rayOrigin)) / (normalVector*rayDirection);
+        float t = (normalVector*((Vector_3D)origin-(Vector_3D)rayOrigin)) / (normalVector*rayDirection);
+        Point_3D intersection = (Vector_3D)rayOrigin + t*rayDirection; // beaucoup de conversions
     }
 };
 

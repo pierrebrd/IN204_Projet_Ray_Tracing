@@ -108,3 +108,9 @@ Dans `ray_launcher`, on doit faire attention à ne pas faire de division d'entie
 
 #### Plan : calcul de l'intersection avec un rayon
 Héritage ? Nécessité des opérateurs * (produit scalaire) et - entre deux Point_3D pour créer un vecteur.
+
+
+#### Opérateurs entre vecteurs
+On les définit en tant qu'opérateurs globaux, car ils seront utilisés dans plusieurs classes (sphere, plane, celle de la source lumineuse) qui ne dérivent pas de la même classe et qui ne dérivent pas de Vector_3D. C'est pour ça qu'on les définit pas dans Vector_3D. On n'utilise pas "friend" car ce n'est pas pertinent (on ne cherche pas à accéder à des champs privés ou protégés).
+
+"Redondance" des opérateurs entre Point_3D et Vector_3D. Proposition : on définit les opérateurs pour Vector_3D et faire des opérations avec Point_3D on convertir en Vector_3D, effectue l'opération puis reconversion ? Avantage : moins d'opérateurs définis; Désavantage : calculs plus longs

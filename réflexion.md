@@ -114,3 +114,5 @@ Héritage ? Nécessité des opérateurs * (produit scalaire) et - entre deux Poi
 On les définit en tant qu'opérateurs globaux, car ils seront utilisés dans plusieurs classes (sphere, plane, celle de la source lumineuse) qui ne dérivent pas de la même classe et qui ne dérivent pas de Vector_3D. C'est pour ça qu'on les définit pas dans Vector_3D. On n'utilise pas "friend" car ce n'est pas pertinent (on ne cherche pas à accéder à des champs privés ou protégés).
 
 "Redondance" des opérateurs entre Point_3D et Vector_3D. Proposition : on définit les opérateurs pour Vector_3D et faire des opérations avec Point_3D on convertir en Vector_3D, effectue l'opération puis reconversion ? Avantage : moins d'opérateurs définis; Désavantage : calculs plus longs
+
+Je n'ai pas réussi à faire avec des opérateurs/constructeurs de conversion pour " Point_3D intersection = (Vector_3D)rayOrigin + t*rayDirection; ". J'ai donc créé un opérateur spécifique pour l'addition entre un Point_3D et un Vector_3D. VOIR PLUS TARD pour améliorer.

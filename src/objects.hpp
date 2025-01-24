@@ -10,19 +10,33 @@ Ce fichier contiendra les classes concernant les rayons et leur suivi
 #include <iostream>
 #include "scene.hpp"
 
+#define EMPTY_SET = Point_3D(0,-1,0)
+// on ne s'intéresse pas aux y<0
+
 struct Point_3D
 {
     // Represents a point in 3D space
+    // Champs
     float x;
     float y;
     float z;
 
+    // Constructeurs
     Point_3D(float x_coord, float y_coord, float z_coord) : x(x_coord), y(y_coord), z(z_coord) {}
 
-    operator Vector_3D() const{
+    //Point_3D(const Vector_3D vector): x(vector.x), y(vector.y), z(vector.z) {}
+
+    // Méthodes
+    void print() const {
+        std::cout << "Point: (" << x << ", " << y << ", " << z << ")\n";
+    }    
+
+    /* Opérateur de conversion ne fonctionne pas...
+    explicit operator Vector_3D() const{
         // Conversion de Point_3D en Vector_3D
         return Vector_3D(x,y,z);
-    }    
+    }*/
+
 
 };
 
@@ -42,7 +56,9 @@ struct Vector_3D
     Vector_3D(float x_coord, float y_coord, float z_coord) : x(x_coord), y(y_coord), z(z_coord) {}
     
         // à partir de deux points Point_3D (P2-P1)
-    Vector_3D(Point_3D P1, Point_3D P2) : x(P2.x-P1.x), y(P2.y-P1.y), z(P2.z-P1.z) {};
+    Vector_3D(Point_3D P1, Point_3D P2) : x(P2.x-P1.x), y(P2.y-P1.y), z(P2.z-P1.z) {}
+
+    Vector_3D(const Point_3D point): x(point.x), y(point.y), z(point.z) {}
 
     // Méthodes
     float norm() const {
@@ -54,7 +70,7 @@ struct Vector_3D
         std::cout << "Vector: (" << x << ", " << y << ", " << z << ")\n";
     }
 
-    operator Point_3D() const{
+    explicit operator Point_3D() const{
         // Conversion de Vector_3D en Point_3D
         return Point_3D(x,y,z);
     }
@@ -63,6 +79,7 @@ struct Vector_3D
 };
 
 // Opérateurs globaux
+// TODO : si possible les factoriser
 float operator * (Vector_3D aLeftVector, Vector_3D aRightVector){
     // Définition du produit scalaire
     return aRightVector.x*aLeftVector.x + aRightVector.y*aLeftVector.y + aRightVector.z*aLeftVector.z;
@@ -78,10 +95,10 @@ Vector_3D operator - (Vector_3D aLeftPoint, Vector_3D aRightPoint){
     return vector;
 }
 
-Vector_3D operator + (Vector_3D aLeftPoint, Vector_3D aRightVector){
+Point_3D operator + (Point_3D aLeftPoint, Vector_3D aRightVector){
     // Somme d'un point et d'un vecteur
-    Vector_3D vector = Vector_3D(aLeftPoint.x + aRightVector.x, aLeftPoint.y + aRightVector.y, aLeftPoint.z + aRightVector.z);
-    return vector;
+    Point_3D resultPoint = Point_3D(aLeftPoint.x + aRightVector.x, aLeftPoint.y + aRightVector.y, aLeftPoint.z + aRightVector.z);
+    return resultPoint;
 }
 
 
@@ -227,7 +244,27 @@ public:
     // Constructor
     Sphere(Point_3D c, float r) : center(c), radius(r) {};
 
+    // Methods
+    Point_3D find_intersection(Ray myRay) const{
+        Point_3D rayOrigin = myRay.get_origin();
+        Vector_3D rayDirection = myRay.get_direction();
 
+        // Equation du 2nd degré à résoudre
+        float a = rayDirection*rayDirection;
+        float b = 2*(rayDirection*(Vector_3D(center,rayOrigin)));
+        float c = (Vector_3D(center,rayOrigin)*Vector_3D(center,rayOrigin)) - radius*radius;
+        float delta = b*b - 4*a*c; // discriminant
+
+        
+        if (delta < 0){
+            // Pas d'intersection
+            return EMPTY_SET;
+        }
+        if (delta = 0){
+            return 0-b/(2*a);
+        }
+
+    }
 };
 
 class Plane : public Object
@@ -239,13 +276,22 @@ public:
     // Constructor
     Plane(Point_3D  o, Vector_3D nv) : origin(o), normalVector(nv) {};
 
-    //Methods
+    // Methods
     Point_3D find_intersection(Ray myRay) const {
         Point_3D rayOrigin = myRay.get_origin();
         Vector_3D rayDirection = myRay.get_direction();
-        float t = (normalVector*((Vector_3D)origin-(Vector_3D)rayOrigin)) / (normalVector*rayDirection);
-        Point_3D intersection = (Vector_3D)rayOrigin + t*rayDirection; // beaucoup de conversions
+
+        if (normalVector*rayDirection==0){
+            // La droite est parallèle au plan
+            // On exclut le cas où la droite du rayon appartient au plan
+            // Cas où il n'y a pas d'intersection
+            return Point_3D(0,-1,0);
+        }
+
+        float t = (normalVector*(Vector_3D(rayOrigin,origin))) / (normalVector*rayDirection); 
+        Point_3D intersection = rayOrigin + t*rayDirection; 
+        return intersection;
     }
-};
+}; 
 
 #endif

@@ -10,38 +10,41 @@
 #include <algorithm>
 
 
-std::optional<std::pair<Point_3D,Object*>> findNextIntersection(Ray myRay,std::vector<Object> *objects){
+std::optional<std::pair<Point_3D,Object*>> findNextIntersection(Ray myRay,std::vector<Object*> *objects){
     // A partir d'un rayon donné (qui arrive à la caméra), lui associer un RGB en fonction des obstacles que rencontre le rayon.
     
     // Rayon d'ombre
     // On détermine l'intersection la plus proche de la caméra avec un objet
-    std::vector<Object>::iterator it = objects->begin();
-    std::optional<Point_3D> closestIntersec = it->find_intersection(myRay);
-    Object* closestObjectPt = &(*it); // TODO : Vérifier que c'est un itérateur valide genre qu'on n'est pas à la fin du vecteur
+    std::vector<Object*>::iterator it = objects->begin();
+    std::optional<Point_3D> closestIntersec = (*it)->find_intersection(myRay);
+    Object* closestObjectPt = *it; // TODO : Vérifier que c'est un itérateur valide genre qu'on n'est pas à la fin du vecteur
     while (!closestIntersec.has_value() && it!=objects->end()){
-        // On prend la première intersection non vide
+        // On cherche la première intersection non vide
+        closestIntersec = (*it)->find_intersection(myRay);
+        closestObjectPt = *it;
         ++it;
     }
 
     // Le rayon n'intersecte avec aucun objet de la scène
-    if (it==objects->end()){
+    if (!closestIntersec.has_value()){
         return std::nullopt;
     }
 
     // Le rayon intersecte avec au moins un objet
     Point_3D rayOrigin = myRay.get_origin();
     for (; it!=objects->end(); it++){
-        std::optional<Point_3D> currentIntersec = it->find_intersection(myRay);
+        std::optional<Point_3D> currentIntersec = (*it)->find_intersection(myRay);
         if (currentIntersec.has_value()){
             if (rayOrigin.distanceTo(currentIntersec.value()) < rayOrigin.distanceTo(closestIntersec.value())){
                 closestIntersec = currentIntersec;
+                closestObjectPt = *it;
             }
         }
     }
     return std::make_pair(closestIntersec.value(),closestObjectPt);
 }
 
-float determineLightIntensity(Point_3D intersection, Object* intersected_object ,std::vector<Light> *lights, std::vector<Object> *objects){
+float determineLightIntensity(Point_3D intersection, Object* intersected_object ,std::vector<Light> *lights, std::vector<Object*> *objects){
     std::vector<Light>::iterator it = lights->begin();
     
     Vector_3D normal = intersected_object->get_normal(intersection);
@@ -49,14 +52,20 @@ float determineLightIntensity(Point_3D intersection, Object* intersected_object 
     float totalIntensity = 0;
     for (;it!=lights->end(); it++){
         Ray nextRay(intersection,Vector_3D(intersection,it->get_position()));
-        findNextIntersection(nextRay,objects);
-        float currentIntensity = it->compute_PointLight(intersection,normal);
-        totalIntensity = totalIntensity + currentIntensity;
+        auto nextIntersection = findNextIntersection(nextRay,objects);
+        float currentIntensity;
+        if (nextIntersection.has_value() && nextIntersection.value().first.distanceTo(intersection) > 0.001){ // arbitraire de fou
+            currentIntensity = 0;
+        }
+        else{
+            currentIntensity = it->compute_PointLight(intersection,normal);
+            totalIntensity = totalIntensity + currentIntensity;
+        }
     }
     return std::min(totalIntensity,1.0f);
 }
 
-std::tuple<uint8_t,uint8_t,uint8_t> compute_color(Ray myRay,std::vector<Object> *objects, std::vector<Light> *lights){
+std::tuple<uint8_t,uint8_t,uint8_t> compute_color(Ray myRay,std::vector<Object*> *objects, std::vector<Light> *lights){
     auto nextIntersect = findNextIntersection(myRay,objects);
     if (!nextIntersect.has_value()){
         return {0,0,0};
@@ -74,7 +83,7 @@ std::tuple<uint8_t,uint8_t,uint8_t> compute_color(Ray myRay,std::vector<Object> 
 }
 
 
-void image_creator(Camera cam, std::vector<Object> *objects, std::vector<Light> *lights, std::string filename){
+void image_creator(Camera cam, std::vector<Object*> *objects, std::vector<Light> *lights, std::string filename){
     // This function creates an image of the scene and saves it as a ppm file
 
     // We open the ppm file as a stream

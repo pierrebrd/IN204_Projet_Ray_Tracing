@@ -34,9 +34,7 @@ struct Point_3D
         std::cout << "Point: (" << x << ", " << y << ", " << z << ")\n";
     }
 
-    float distanceTo(Point_3D anotherPoint){
-        return Vector_3D(Point_3D(x,y,z),anotherPoint).norm();
-    }
+    float distanceTo(Point_3D anotherPoint);
 
     /* Opérateur de conversion ne fonctionne pas...
     explicit operator Vector_3D() const{
@@ -118,6 +116,9 @@ Vector_3D normalize(Vector_3D vector){
 }
 
 
+float Point_3D::distanceTo(Point_3D anotherPoint){
+    return Vector_3D(Point_3D(x,y,z),anotherPoint).norm();
+}
 
 
 struct Angles_Spherical
@@ -292,7 +293,12 @@ public :
         catch(std::invalid_argument error) {
             return 0.;
         }
-        return intensity * (light_vector*normal_vector); 
+
+        float lighting_intensity = intensity * (light_vector*normal_vector); 
+        // if (lighting_intensity < 0){
+        //     return 0.;
+        // }
+        return lighting_intensity;
     }
 
 };
@@ -304,7 +310,7 @@ class Object
 {
 protected : 
     std::string shape = "Object";
-    std::tuple<uint8_t, uint8_t, uint8_t> base_color;
+    std::tuple<uint8_t, uint8_t, uint8_t> base_color = {255,0,0};
 public:
     // Getter :
     std::string get_shape() const { return shape; }
@@ -360,15 +366,20 @@ public:
         else{
             float t1 = (-b+std::sqrt(delta))/(2*a);
             float t2 = (-b-std::sqrt(delta))/(2*a);
-            // On choisit la solution la plus petite en valeur absolue
-            if (std::abs(t1) < std::abs(t2)){
+            // Rq : t2 < t1
+            if (t1 <= 0 && t2 <= 0) { // On est du mauvais côté du rayon si les deux valeurs négatives
+                return std::nullopt;
+            }
+            else if (t2>0.001f){ // Sinon, on prend la positive la plus petite.
+                t = t2;
+            }
+            // t2 < 0.001f
+            else if (t1>0.001f){
                 t = t1;
             }
-            else{t=t2;}
-        }
-        if (t <= 0){
-            // On est du mauvais côté du rayon
-            return std::nullopt;
+            else{
+                return std::nullopt;
+            }
         }
         Point_3D intersection = rayOrigin + t*rayDirection; 
         return intersection;
@@ -407,7 +418,10 @@ public:
             return std::nullopt;
         }
 
-        float t = (normalVector*(Vector_3D(rayOrigin,origin))) / (normalVector*rayDirection); 
+        float t = (normalVector*(Vector_3D(rayOrigin,origin))) / (normalVector*rayDirection);
+        if (t<0.001f){
+            return std::nullopt;
+        }
         Point_3D intersection = rayOrigin + t*rayDirection; 
         return intersection;
     }

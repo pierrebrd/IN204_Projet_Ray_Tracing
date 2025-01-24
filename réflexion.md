@@ -120,9 +120,17 @@ Je n'ai pas réussi à faire avec des opérateurs/constructeurs de conversion po
 Nous avons hésité à utiliser les exceptions pour le cas où il n'y a pas d'intersection, mais performances plus couteuses et pas but des exceptions en C++ car cas prévisible.
 
 
-
+#### Premier affichage graphique
+Problèmes successifs : 
+* tout était noir
+* le côté de la sphère non éclairé était rouge --> car problème de produit scalaire négatif faisait qu'on repassait de 0 à 255
+* le côté de la sphère non éclairé était noir, pas d'ombre d'une sphère sur l'autre
+* affichage que d'un seul objet
+* rayon réfléchis sur le plan n'éclairent pas l'arrière de la sphère
 
 
 TODO :
 - Mettre des const partout ou il faut !!
 - Lampes pas blanches
+- Valeur universelle des Treshold
+- plan avec vecteur normal dans le mauvais sens

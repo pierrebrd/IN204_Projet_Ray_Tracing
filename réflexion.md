@@ -74,7 +74,7 @@ Choix d'utiliser PPM :
 
 Fonctions :
 - Une fonction qui lance les rayons initiaux en partant de la caméra, pour chacun des pixels de l'image. Cette fonction peut être parallélisée (plusieurs threads qui s'occupent chacun d'une partie différente de l'image).
-- Une fonction qui suit un rayon jusqu'à l'intersection avec un objet. Quand on atteint un objet, il faut lancer les rayons de réflection, de réfraction, et les rayons d'ombre. Les rayons d'ombre sont des rayons que l'on envoie vers chaque source de lumière pour savoir si l'objet est éclairé ou non.
+- Une fonction qui suit un rayon jusqu'à l'intersection avec un objet. Quand on atteint un objet, il faut lancer les rayons de réflexion, de réfraction, et les rayons d'ombre. Les rayons d'ombre sont des rayons que l'on envoie vers chaque source de lumière pour savoir si l'objet est éclairé ou non.
 - Pour chacun des objets différents (sphère, plan, etc), il faudra des fonctions permettant de calculer les conditions d'intersection et les directions des rayons réfléchis et réfractés. Il faudra aussi une fonction qui calcule la couleur finale du pixel, en fonction des propriétés du matériel (couleur, transparence, etc)
 
 Interactions : 
@@ -116,3 +116,13 @@ On les définit en tant qu'opérateurs globaux, car ils seront utilisés dans pl
 "Redondance" des opérateurs entre Point_3D et Vector_3D. Proposition : on définit les opérateurs pour Vector_3D et faire des opérations avec Point_3D on convertir en Vector_3D, effectue l'opération puis reconversion ? Avantage : moins d'opérateurs définis; Désavantage : calculs plus longs
 
 Je n'ai pas réussi à faire avec des opérateurs/constructeurs de conversion pour " Point_3D intersection = (Vector_3D)rayOrigin + t*rayDirection; ". J'ai donc créé un opérateur spécifique pour l'addition entre un Point_3D et un Vector_3D. VOIR PLUS TARD pour améliorer.
+
+Nous avons hésité à utiliser les exceptions pour le cas où il n'y a pas d'intersection, mais performances plus couteuses et pas but des exceptions en C++ car cas prévisible.
+
+
+
+
+
+TODO :
+- Mettre des const partout ou il faut !!
+- Lampes pas blanches

@@ -8,7 +8,10 @@ Ce fichier contiendra les classes concernant les rayons et leur suivi
 #include <cmath>
 #include <stdexcept>
 #include <iostream>
-#include "scene.hpp"
+//#include "scene.hpp"
+#include <optional>
+#include <tuple>
+#include <string>
 
 #define EMPTY_SET = Point_3D(0,-1,0)
 // on ne s'intéresse pas aux y<0
@@ -29,7 +32,11 @@ struct Point_3D
     // Méthodes
     void print() const {
         std::cout << "Point: (" << x << ", " << y << ", " << z << ")\n";
-    }    
+    }
+
+    float distanceTo(Point_3D anotherPoint){
+        return Vector_3D(Point_3D(x,y,z),anotherPoint).norm();
+    }
 
     /* Opérateur de conversion ne fonctionne pas...
     explicit operator Vector_3D() const{
@@ -79,7 +86,6 @@ struct Vector_3D
 };
 
 // Opérateurs globaux
-// TODO : si possible les factoriser
 float operator * (Vector_3D aLeftVector, Vector_3D aRightVector){
     // Définition du produit scalaire
     return aRightVector.x*aLeftVector.x + aRightVector.y*aLeftVector.y + aRightVector.z*aLeftVector.z;
@@ -100,6 +106,17 @@ Point_3D operator + (Point_3D aLeftPoint, Vector_3D aRightVector){
     Point_3D resultPoint = Point_3D(aLeftPoint.x + aRightVector.x, aLeftPoint.y + aRightVector.y, aLeftPoint.z + aRightVector.z);
     return resultPoint;
 }
+
+// Fonction pour normaliser un vecteur 
+Vector_3D normalize(Vector_3D vector){
+    float norm = vector.norm();
+    if (norm == 0){
+        throw std::invalid_argument("The norm of the vector is null, it can not be normalized");
+    }
+    return Vector_3D(vector.x/norm,vector.y/norm,vector.z/norm);
+
+}
+
 
 
 
@@ -172,7 +189,7 @@ private:
 
 public:
     // Constructor :
-    Camera(Point_3D pos = { 0, 0, 0 }, Vector_3D dir = { 0, 1, 0 }, unsigned f = 90, unsigned res_h = 400, unsigned res_w = 600) : position(pos), direction(dir), hfov(f), resolution_height(res_h), resolution_width(res_w) {
+    Camera(Point_3D pos = { 0, 0, 0 }, Vector_3D dir = { 0, 1, 0 }, unsigned f = 90, unsigned res_h = 10, unsigned res_w = 15) : position(pos), direction(dir), hfov(f), resolution_height(res_h), resolution_width(res_w) {
         if (hfov > 179) {
             throw std::invalid_argument("horizontal fov must be less than 180 degrees");
         }
@@ -225,59 +242,161 @@ public:
     }
 };
 
+
+// class Light {
+// protected : 
+//     std::string type = "Light";
+// public :
+//     // Function to compute the lightning on a point
+//     virtual float compute_lighting(Point_3D point, Vector_3D normal_vector) const = 0;
+// };
+
+// Pour l'instant, nos lumières sont des points lumineux
+
+class Light
+{
+    Point_3D position;
+    float intensity; // Number between 0 and 1
+    //std::tuple<uint8_t, uint8_t, uint8_t> light_color;
+protected : 
+    std::string type = "PointLight";
+public :
+    // Constructor
+    Light(Point_3D pos = {0, 0, 0}, float i = 1.0): position(pos), intensity(i) {
+        if (intensity < 0){
+            throw std::invalid_argument("The intensity of the light must be positive");
+        }
+    }
+    
+
+    // Getters
+    Point_3D get_position() const { return position; }
+    float get_intensity() const { return intensity; }
+    //std::tuple<uint8_t, uint8_t, uint8_t> get_light_color() const { return light_color; }
+
+    // Methods : 
+    float compute_PointLight(Point_3D point,Vector_3D normal_vector) const{
+        // We have a Pointlight and a point on an object and the normal vector at this point
+        // We compute the lightning based on the dot product between the normal vector of the surface and the vector from the point to the light
+        // It can be negative (part of a sphere in the shadow for example) 
+        Vector_3D light_vector = Vector_3D(point,position);
+        try{
+            light_vector = normalize(light_vector);
+        }
+        catch(std::invalid_argument error) {
+            return 0.;
+        }
+        try {
+            normal_vector = normalize(normal_vector);
+        }
+        catch(std::invalid_argument error) {
+            return 0.;
+        }
+        return intensity * (light_vector*normal_vector); 
+    }
+
+};
+
+// On pourra implémenter plus tard d'autres type de lumières (directionnelles, cônes, surface, sphère...)
+// Carrément avoir des objets (genre une sphère) émetteurs de lumière ?
+
 class Object
 {
-    class Shape
-    {};
-    class Texture
-    {
+protected : 
+    std::string shape = "Object";
+    std::tuple<uint8_t, uint8_t, uint8_t> base_color;
+public:
+    // Getter :
+    std::string get_shape() const { return shape; }
+    std::tuple<uint8_t, uint8_t, uint8_t> get_color() const { return base_color; }
+    
+    // Methods
 
-    };
+    // Method to find the intersection between the object and a ray
+    virtual std::optional<Point_3D> find_intersection(Ray myRay) const = 0;
+
+    // Method to compute the normal vector at a point
+    virtual Vector_3D get_normal(Point_3D point) const = 0;
+
+
 };
+
+
 
 class Sphere : public Object
 {
     Point_3D center;
     float radius;
+    std::tuple<uint8_t, uint8_t, uint8_t> base_color;
+
+protected :
+    std::string shape = "Sphere";
 
 public:
+
     // Constructor
-    Sphere(Point_3D c, float r) : center(c), radius(r) {};
+    Sphere(Point_3D c, float r ) : center(c), radius(r) {};
+    Sphere(Point_3D c, float r,std::tuple<uint8_t, uint8_t, uint8_t> color ) : center(c), radius(r), base_color(color) {};
 
     // Methods
-    Point_3D find_intersection(Ray myRay) const{
+    std::optional<Point_3D> find_intersection(Ray myRay) const{
         Point_3D rayOrigin = myRay.get_origin();
         Vector_3D rayDirection = myRay.get_direction();
 
-        // Equation du 2nd degré à résoudre
+        // Equation du 2nd degré à résoudre du type a*t^2 + b*t + c = 0
         float a = rayDirection*rayDirection;
         float b = 2*(rayDirection*(Vector_3D(center,rayOrigin)));
         float c = (Vector_3D(center,rayOrigin)*Vector_3D(center,rayOrigin)) - radius*radius;
         float delta = b*b - 4*a*c; // discriminant
 
-        
         if (delta < 0){
             // Pas d'intersection
-            return EMPTY_SET;
+            return std::nullopt;
         }
-        if (delta = 0){
-            return 0-b/(2*a);
+        float t;
+        if (delta == 0){
+            t = -b/(2*a);
         }
-
+        else{
+            float t1 = (-b+std::sqrt(delta))/(2*a);
+            float t2 = (-b-std::sqrt(delta))/(2*a);
+            // On choisit la solution la plus petite en valeur absolue
+            if (std::abs(t1) < std::abs(t2)){
+                t = t1;
+            }
+            else{t=t2;}
+        }
+        if (t <= 0){
+            // On est du mauvais côté du rayon
+            return std::nullopt;
+        }
+        Point_3D intersection = rayOrigin + t*rayDirection; 
+        return intersection;
     }
+
+    Vector_3D get_normal(Point_3D point) const{
+        return Vector_3D(center,point);
+    }
+
+
 };
 
 class Plane : public Object
 {
     Point_3D origin;
     Vector_3D normalVector;
-
+    std::tuple<uint8_t, uint8_t, uint8_t> base_color;
+protected : 
+    std::string shape = "Plane";
 public:
+
+
     // Constructor
     Plane(Point_3D  o, Vector_3D nv) : origin(o), normalVector(nv) {};
+    Plane(Point_3D  o, Vector_3D nv, std::tuple<uint8_t, uint8_t, uint8_t> color) : origin(o), normalVector(nv), base_color(color) {};
 
     // Methods
-    Point_3D find_intersection(Ray myRay) const {
+    std::optional<Point_3D> find_intersection(Ray myRay) const {
         Point_3D rayOrigin = myRay.get_origin();
         Vector_3D rayDirection = myRay.get_direction();
 
@@ -285,12 +404,16 @@ public:
             // La droite est parallèle au plan
             // On exclut le cas où la droite du rayon appartient au plan
             // Cas où il n'y a pas d'intersection
-            return Point_3D(0,-1,0);
+            return std::nullopt;
         }
 
         float t = (normalVector*(Vector_3D(rayOrigin,origin))) / (normalVector*rayDirection); 
         Point_3D intersection = rayOrigin + t*rayDirection; 
         return intersection;
+    }
+
+    Vector_3D get_normal(Point_3D point) const{
+        return normalVector;
     }
 }; 
 

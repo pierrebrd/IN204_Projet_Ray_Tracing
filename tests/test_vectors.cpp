@@ -1,4 +1,4 @@
-#include "objects.hpp"
+#include "../src/objects.hpp"
 
 int main() {
     Camera cam(Point_3D(0, 0, 0), Vector_3D(0, 1, 0), 90, 5, 7);
@@ -10,13 +10,17 @@ int main() {
             ray.get_direction().to_angles().print();
         }
     }
+    
 
     Ray ray = Ray(Point_3D(0,0,0),Vector_3D(0,1,0));
-    Vector_3D myVector = 3.0*Vector_3D(1,1,1);
-    myVector.print();
 
-    Plane aPlane(Point_3D(0,2,0), Vector_3D(0,1,0));
-    Point_3D theIntersec = aPlane.find_intersection(ray);
-    theIntersec.print();
+    Sphere aSphere = Sphere(Point_3D(0,-3,0),1);
+    std::optional<Point_3D> theIntersec = aSphere.find_intersection(ray);
+    if (!theIntersec.has_value()){
+        printf("Intersection vide");
+    }
+    else{
+        theIntersec.value().print();
+    }    
     return 0;
 }

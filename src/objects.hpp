@@ -196,11 +196,11 @@ private:
     unsigned cameraHfov; // Between 0 and 179, horizontal field of view in degrees
     unsigned resolution_height;
     unsigned resolution_width;
-    float sceneAmbientLight; // 
+    std::tuple<float, float, float> sceneAmbientLight; // 
 
 public:
     // Constructor :
-    Camera(Point_3D position = { 0, 0, 0 }, Vector_3D direction = { 0, 1, 0 }, unsigned fov = 90, unsigned res_height = 200, unsigned res_width = 300, float ambientLight = 0.2) : cameraPosition(position), cameraDirection(direction), cameraHfov(fov), resolution_height(res_height), resolution_width(res_width), sceneAmbientLight(ambientLight) {
+    Camera(Point_3D position = { 0, 0, 0 }, Vector_3D direction = { 0, 1, 0 }, unsigned fov = 90, unsigned res_height = 200, unsigned res_width = 300, std::tuple<float, float, float> ambientLight = { 0.2,0.2,0.2 }) : cameraPosition(position), cameraDirection(direction), cameraHfov(fov), resolution_height(res_height), resolution_width(res_width), sceneAmbientLight(ambientLight) {
         if (cameraHfov > 179) {
             throw std::invalid_argument("horizontal fov must be less than 180 degrees");
         }
@@ -224,7 +224,7 @@ public:
     unsigned get_hfov() const { return cameraHfov; }
     unsigned get_resolution_height() const { return resolution_height; }
     unsigned get_resolution_width() const { return resolution_width; }
-    float get_ambient_light() const { return sceneAmbientLight; }
+    std::tuple<float, float, float> get_ambient_light() const { return sceneAmbientLight; }
 
 
     Ray ray_launcher(unsigned pixel_height, unsigned pixel_width) {

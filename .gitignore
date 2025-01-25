@@ -11,9 +11,5 @@
 */*/.latex_files/
 */*/*/.latex_files/
 
-
-
-
-
-.vscode/c_cpp_properties.json
-.vscode/settings.json
+.vscode/*
+.vscode/

@@ -113,6 +113,18 @@ Vector_3D normalize(Vector_3D vector) {
 
 }
 
+// Opérateurs globaux pour les tuples
+std::tuple<float, float, float> operator +(std::tuple<float, float, float> aLeftTuple, std::tuple<float, float, float> aRightTuple){
+    return {std::get<0>(aLeftTuple)+std::get<0>(aRightTuple),std::get<1>(aLeftTuple)+std::get<1>(aRightTuple),std::get<2>(aLeftTuple)+std::get<2>(aRightTuple)};
+}
+
+std::tuple<float, float, float> operator *(float aFloat, std::tuple<float, float, float> aRightTuple){
+    return {aFloat*std::get<0>(aRightTuple),aFloat*std::get<1>(aRightTuple),aFloat*std::get<2>(aRightTuple)};
+}
+
+std::tuple<float, float, float> minTuple(std::tuple<float, float, float> tuple1, std::tuple<float, float, float> tuple2){
+    return {std::min(std::get<0>(tuple1),std::get<0>(tuple2)),std::min(std::get<1>(tuple1),std::get<1>(tuple2)),std::min(std::get<2>(tuple1),std::get<2>(tuple2))};
+}
 
 float Point_3D::distanceTo(Point_3D anotherPoint) {
     return Vector_3D(Point_3D(x, y, z), anotherPoint).norm();
@@ -157,7 +169,6 @@ Angles_Spherical Vector_3D::to_angles() const {
     Angles_Spherical angles(theta, phi);
     return angles;
 }
-
 
 
 class Ray
@@ -255,26 +266,25 @@ public:
 class Light
 {
     Point_3D position;
-    float intensity; // Number between 0 and 1
-    //std::tuple<uint8_t, uint8_t, uint8_t> light_color;
+    std::tuple<float, float, float> light_color; // Tuple de float entre 0 et 1
 protected:
     std::string type = "PointLight";
 public:
     // Constructor
-    Light(Point_3D pos = { 0, 0, 0 }, float i = 1.0) : position(pos), intensity(i) {
-        if (intensity < 0) {
+    Light(Point_3D pos = { 0, 0, 0 }, std::tuple<float, float, float> i = {1.0,1.0,1.0}) : position(pos), light_color(i) {
+        /*if (intensity <= {0,0,0}) {
             throw std::invalid_argument("The intensity of the light must be positive");
         }
+        */
     }
 
 
     // Getters
     Point_3D get_position() const { return position; }
-    float get_intensity() const { return intensity; }
-    //std::tuple<uint8_t, uint8_t, uint8_t> get_light_color() const { return light_color; }
+    std::tuple<float, float, float>  get_intensity() const { return light_color; }
 
     // Methods : 
-    float compute_PointLight(Point_3D point, Vector_3D normal_vector) const {
+    std::tuple<float, float, float> compute_PointLight(Point_3D point, Vector_3D normal_vector) const {
         // We have a Pointlight and a point on an object and the normal vector at this point
         // We compute the lighting based on the dot product between the normal vector of the surface and the vector from the point to the light
         // It can be negative (part of a sphere in the shadow for example) 
@@ -283,16 +293,16 @@ public:
             light_vector = normalize(light_vector);
         }
         catch (std::invalid_argument error) {
-            return 0.;
+            return {0,0,0};
         }
         try {
             normal_vector = normalize(normal_vector);
         }
         catch (std::invalid_argument error) {
-            return 0.;
+            return {0,0,0};
         }
 
-        float lighting_intensity = intensity * (light_vector * normal_vector);
+        std::tuple<float, float, float> lighting_intensity = (light_vector * normal_vector)*light_color;
         // if (lighting_intensity < 0){
         //     return 0.;
         // }
@@ -308,12 +318,12 @@ class Object
 {
 protected:
     std::string shape = "Object";
-    std::tuple<uint8_t, uint8_t, uint8_t> base_color = { 255,0,0 };
+    std::tuple<float, float, float> base_color = { 1,0,0 }; // RGB tuples de float entre 0 et 1
     float reflectionCoeff = 0.5; // Entre 0 et 1
 public:
     // Getter :
     std::string get_shape() const { return shape; }
-    std::tuple<uint8_t, uint8_t, uint8_t> get_color() const { return base_color; }
+    std::tuple<float, float, float> get_color() const { return base_color; }
     float get_reflectionCoeff() const { return reflectionCoeff; }
     // Methods
 
@@ -349,7 +359,7 @@ public:
 
     // Constructor
     Sphere(Point_3D c, float r) : center(c), radius(r) {};
-    Sphere(Point_3D c, float r, std::tuple<uint8_t, uint8_t, uint8_t> color) : center(c), radius(r) {
+    Sphere(Point_3D c, float r, std::tuple<float, float, float> color) : center(c), radius(r) {
         this->base_color = color;
     };
 
@@ -405,7 +415,7 @@ class Plane : public Object
 {
     Point_3D origin;
     Vector_3D normalVector;
-    std::tuple<uint8_t, uint8_t, uint8_t> base_color;
+    std::tuple<float, float, float> base_color;
 protected:
     std::string shape = "Plane";
 public:
@@ -413,7 +423,7 @@ public:
 
     // Constructor
     Plane(Point_3D  o, Vector_3D nv) : origin(o), normalVector(nv) {};
-    Plane(Point_3D  o, Vector_3D nv, std::tuple<uint8_t, uint8_t, uint8_t> color) : origin(o), normalVector(nv), base_color(color) {};
+    Plane(Point_3D  o, Vector_3D nv, std::tuple<float, float, float> color) : origin(o), normalVector(nv), base_color(color) {};
 
     // Methods
     std::optional<Point_3D> find_intersection(Ray myRay) const {

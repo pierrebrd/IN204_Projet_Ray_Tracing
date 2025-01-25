@@ -44,12 +44,13 @@ std::optional<std::pair<Point_3D,Object*>> findNextIntersection(Ray myRay,std::v
     return std::make_pair(closestIntersec.value(),closestObjectPt);
 }
 
-float determineLightIntensity(Point_3D intersection, Object* intersected_object ,std::vector<Light> *lights, std::vector<Object*> *objects){
+float determineLightIntensity(Point_3D intersection, Object* intersected_object,std::vector<Light> *lights, std::vector<Object*> *objects){
     std::vector<Light>::iterator it = lights->begin();
     
     Vector_3D normal = intersected_object->get_normal(intersection);
 
     float totalIntensity = 0;
+    // Rayons d'ombre
     for (;it!=lights->end(); it++){
         Ray nextRay(intersection,Vector_3D(intersection,it->get_position()));
         auto nextIntersection = findNextIntersection(nextRay,objects);
@@ -62,7 +63,19 @@ float determineLightIntensity(Point_3D intersection, Object* intersected_object 
             totalIntensity = totalIntensity + currentIntensity;
         }
     }
+
+    // Rayon réfléchi
+    // On permet aux rayons de se réflechir une fois. 
+    // A reflection ray is traced in the mirror-reflection direction. The closest object it intersects is what will be seen in the reflection
+    
+
     return std::min(totalIntensity,1.0f);
+}
+
+float determineLightIntensity_ReflectedRay(Point_3D intersection, Object* intersected_object,std::vector<Light> *lights, std::vector<Object*> *objects, Ray incidentRay){
+    Vector_3D normal = intersected_object->get_normal(intersection);
+    Vector_3D reflectedRayDirection = intersected_object->determineReflectedRay(incidentRay,intersection,normal);
+    Point_3D nextIntersection = 
 }
 
 std::tuple<uint8_t,uint8_t,uint8_t> compute_color(Ray myRay,std::vector<Object*> *objects, std::vector<Light> *lights){

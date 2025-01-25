@@ -13,9 +13,6 @@ Ce fichier contiendra les classes concernant les rayons et leur suivi
 #include <tuple>
 #include <string>
 
-#define EMPTY_SET = Point_3D(0,-1,0)
-// on ne s'intéresse pas aux y<0
-
 struct Point_3D
 {
     // Represents a point in 3D space
@@ -278,7 +275,7 @@ public :
     // Methods : 
     float compute_PointLight(Point_3D point,Vector_3D normal_vector) const{
         // We have a Pointlight and a point on an object and the normal vector at this point
-        // We compute the lightning based on the dot product between the normal vector of the surface and the vector from the point to the light
+        // We compute the lighting based on the dot product between the normal vector of the surface and the vector from the point to the light
         // It can be negative (part of a sphere in the shadow for example) 
         Vector_3D light_vector = Vector_3D(point,position);
         try{
@@ -324,7 +321,19 @@ public:
     // Method to compute the normal vector at a point
     virtual Vector_3D get_normal(Point_3D point) const = 0;
 
-
+    Ray determineReflectedRay(Ray myRay,Point_3D pointOfReflection, Vector_3D normal){
+        // La méthode ne dépend pas de la forme de l'objet mais du vecteur normal à l'objet
+        // En notant u le vecteur du rayon incident, w le vecteur du rayon réfléchi et n le vecteur normal à la sphère
+        // w = u - 2*(u.n)n
+        // Hypothèse : u et n de norme 1
+        Point_3D rayOrigin = myRay.get_origin();
+        Vector_3D rayDirection = normalize(myRay.get_direction()); // u
+        if (normal.norm() != 1){
+            throw std::invalid_argument("The norm of the vector must be 1");
+        }
+        Vector_3D reflectedRayDirection = rayDirection - 2*(rayDirection*normal)*normal;
+        return Ray(pointOfReflection,reflectedRayDirection);
+    }
 };
 
 

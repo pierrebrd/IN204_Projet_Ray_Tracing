@@ -308,11 +308,12 @@ class Object
 protected : 
     std::string shape = "Object";
     std::tuple<uint8_t, uint8_t, uint8_t> base_color = {255,0,0};
+    float reflectionCoeff = 0.5; // Entre 0 et 1
 public:
     // Getter :
     std::string get_shape() const { return shape; }
     std::tuple<uint8_t, uint8_t, uint8_t> get_color() const { return base_color; }
-    
+    float get_reflectionCoeff() const { return reflectionCoeff; }
     // Methods
 
     // Method to find the intersection between the object and a ray

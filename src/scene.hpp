@@ -44,12 +44,12 @@ std::optional<std::pair<Point_3D,Object*>> findNextIntersection(Ray myRay,std::v
     return std::make_pair(closestIntersec.value(),closestObjectPt);
 }
 
-float determineLightIntensity(Point_3D intersection, Object* intersected_object,std::vector<Light> *lights, std::vector<Object*> *objects){
+float determineLightIntensity_Shadow(Point_3D intersection, Object* intersected_object,std::vector<Light> *lights, std::vector<Object*> *objects){
     std::vector<Light>::iterator it = lights->begin();
     
     Vector_3D normal = intersected_object->get_normal(intersection);
 
-    float totalIntensity = 0;
+    float lightIntensityShadow = 0;
     // Rayons d'ombre
     for (;it!=lights->end(); it++){
         Ray nextRay(intersection,Vector_3D(intersection,it->get_position()));
@@ -60,23 +60,39 @@ float determineLightIntensity(Point_3D intersection, Object* intersected_object,
         }
         else{
             currentIntensity = it->compute_PointLight(intersection,normal);
-            totalIntensity = totalIntensity + currentIntensity;
+            lightIntensityShadow = lightIntensityShadow + currentIntensity;
         }
-    }
+    }    
+    return lightIntensityShadow;
+}
 
+float determineLightIntensity_Reflection(Point_3D intersection, Object* intersected_object,std::vector<Light> *lights, std::vector<Object*> *objects, Ray incidentRay){
     // Rayon réfléchi
     // On permet aux rayons de se réflechir une fois. 
     // A reflection ray is traced in the mirror-reflection direction. The closest object it intersects is what will be seen in the reflection
-    
-
-    return std::min(totalIntensity,1.0f);
-}
-
-float determineLightIntensity_ReflectedRay(Point_3D intersection, Object* intersected_object,std::vector<Light> *lights, std::vector<Object*> *objects, Ray incidentRay){
     Vector_3D normal = intersected_object->get_normal(intersection);
-    Vector_3D reflectedRayDirection = intersected_object->determineReflectedRay(incidentRay,intersection,normal);
-    Point_3D nextIntersection = 
+    Ray reflectedRayDirection = intersected_object->determineReflectedRay(incidentRay,intersection,normal);
+    auto nextIntersectionPair = findNextIntersection(reflectedRayDirection,objects);
+
+    if (!nextIntersectionPair.has_value()){
+        // Le rayon réfléchi ne recontre pas de nouvel objet
+        return 0;
+    }
+
+    float reflectionCoeff = intersected_object->get_reflectionCoeff();
+    Point_3D nextIntersection = nextIntersectionPair.value().first;
+    Object* nextIntersectedObject = nextIntersectionPair.value().second;
+    float lightIntensity = determineLightIntensity_Shadow(nextIntersection,nextIntersectedObject,lights,objects);
+        // On ne fait pas réfléchir le rayon une autre fois sur l'objet, donc on utilise bien la fonctino ..._Shadow
+    return reflectionCoeff*lightIntensity;
 }
+
+float determineLightIntensity(Point_3D intersection, Object* intersected_object,std::vector<Light> *lights, std::vector<Object*> *objects, Ray incidentRay){
+    float lightIntensityShadow = determineLightIntensity_Shadow(intersection,intersected_object,lights,objects);
+    float lightIntensityReflection = determineLightIntensity_Reflection(intersection,intersected_object,lights,objects,incidentRay);
+    return std::min(lightIntensityReflection+lightIntensityShadow,1.0f);
+}
+
 
 std::tuple<uint8_t,uint8_t,uint8_t> compute_color(Ray myRay,std::vector<Object*> *objects, std::vector<Light> *lights){
     auto nextIntersect = findNextIntersection(myRay,objects);
@@ -86,7 +102,7 @@ std::tuple<uint8_t,uint8_t,uint8_t> compute_color(Ray myRay,std::vector<Object*>
     else {
         Point_3D intersection = nextIntersect.value().first;
         Object* intersected_object = nextIntersect.value().second;
-        float lightIntensity = determineLightIntensity(intersection,intersected_object,lights,objects);
+        float lightIntensity = determineLightIntensity(intersection,intersected_object,lights,objects,myRay);
         auto object_color = intersected_object->get_color();
         return {static_cast<uint8_t>(lightIntensity*std::get<0>(object_color)),
                 static_cast<uint8_t>(lightIntensity*std::get<1>(object_color)),

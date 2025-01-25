@@ -88,14 +88,15 @@ float determineLightIntensity_Reflection(Point_3D intersection, Object* intersec
     return reflectionCoeff * lightIntensity;
 }
 
-float determineLightIntensity(Point_3D intersection, Object* intersected_object, std::vector<Light>* lights, std::vector<Object*>* objects, Ray incidentRay) {
+float determineLightIntensity(Point_3D intersection, Object* intersected_object, Camera* cam, std::vector<Light>* lights, std::vector<Object*>* objects, Ray incidentRay) {
     float lightIntensityShadow = determineLightIntensity_Shadow(intersection, intersected_object, lights, objects);
     float lightIntensityReflection = determineLightIntensity_Reflection(intersection, intersected_object, lights, objects, incidentRay);
-    return std::min(lightIntensityReflection + lightIntensityShadow, 1.0f);
+    float lightIntensityAmbient = cam->get_ambient_light();
+    return std::min(lightIntensityReflection + lightIntensityShadow + lightIntensityAmbient, 1.0f);
 }
 
 
-std::tuple<uint8_t, uint8_t, uint8_t> compute_color(Ray myRay, std::vector<Object*>* objects, std::vector<Light>* lights) {
+std::tuple<uint8_t, uint8_t, uint8_t> compute_color(Ray myRay, Camera* cam, std::vector<Object*>* objects, std::vector<Light>* lights) {
     auto nextIntersect = findNextIntersection(myRay, objects);
     if (!nextIntersect.has_value()) {
         return { 0,0,0 };
@@ -103,7 +104,7 @@ std::tuple<uint8_t, uint8_t, uint8_t> compute_color(Ray myRay, std::vector<Objec
     else {
         Point_3D intersection = nextIntersect.value().first;
         Object* intersected_object = nextIntersect.value().second;
-        float lightIntensity = determineLightIntensity(intersection, intersected_object, lights, objects, myRay);
+        float lightIntensity = determineLightIntensity(intersection, intersected_object, cam, lights, objects, myRay);
         auto object_color = intersected_object->get_color();
         return { static_cast<uint8_t>(lightIntensity * std::get<0>(object_color)),
                 static_cast<uint8_t>(lightIntensity * std::get<1>(object_color)),
@@ -113,7 +114,7 @@ std::tuple<uint8_t, uint8_t, uint8_t> compute_color(Ray myRay, std::vector<Objec
 }
 
 
-void image_creator(Camera cam, std::vector<Object*>* objects, std::vector<Light>* lights, std::string filename) {
+void image_creator(Camera* cam, std::vector<Object*>* objects, std::vector<Light>* lights, std::string filename) {
     // This function creates an image of the scene and saves it as a ppm file
 
     // We open the ppm file as a stream
@@ -125,14 +126,14 @@ void image_creator(Camera cam, std::vector<Object*>* objects, std::vector<Light>
     }
 
     file << "P3" << std::endl;
-    file << cam.get_resolution_width() << " " << cam.get_resolution_height() << std::endl;
+    file << cam->get_resolution_width() << " " << cam->get_resolution_height() << std::endl;
     file << "255" << std::endl;
-    for (unsigned i = 0; i < cam.get_resolution_height(); i++) {
-        for (unsigned j = 0; j < cam.get_resolution_width(); j++) {
+    for (unsigned i = 0; i < cam->get_resolution_height(); i++) {
+        for (unsigned j = 0; j < cam->get_resolution_width(); j++) {
             // We lauch the ray from the camera
-            Ray initial_Ray = cam.ray_launcher(cam.get_resolution_height() - i - 1, j);
+            Ray initial_Ray = cam->ray_launcher(cam->get_resolution_height() - i - 1, j);
             // We calculate the color of the pixel 
-            std::tuple<uint8_t, uint8_t, uint8_t> colors = compute_color(initial_Ray, objects, lights);
+            std::tuple<uint8_t, uint8_t, uint8_t> colors = compute_color(initial_Ray, cam, objects, lights);
             // We write the color in the file 
             file << static_cast<int>(std::get<0>(colors)) << " " << static_cast<int>(std::get<1>(colors)) << " " << static_cast<int>(std::get<2>(colors)) << " ";
             file.flush();

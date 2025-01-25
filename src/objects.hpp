@@ -180,22 +180,23 @@ public:
 class Camera
 {
 private:
-    Point_3D position;
-    Vector_3D direction;
-    unsigned hfov; // Between 0 and 179, horizontal field of view in degrees
+    Point_3D cameraPosition;
+    Vector_3D cameraDirection;
+    unsigned cameraHfov; // Between 0 and 179, horizontal field of view in degrees
     unsigned resolution_height;
     unsigned resolution_width;
+    float sceneAmbientLight; // 
 
 public:
     // Constructor :
-    Camera(Point_3D pos = { 0, 0, 0 }, Vector_3D dir = { 0, 1, 0 }, unsigned f = 90, unsigned res_h = 10, unsigned res_w = 15) : position(pos), direction(dir), hfov(f), resolution_height(res_h), resolution_width(res_w) {
-        if (hfov > 179) {
+    Camera(Point_3D position = { 0, 0, 0 }, Vector_3D direction = { 0, 1, 0 }, unsigned fov = 90, unsigned res_height = 200, unsigned res_width = 300, float ambientLight = 0.2) : cameraPosition(position), cameraDirection(direction), cameraHfov(fov), resolution_height(res_height), resolution_width(res_width), sceneAmbientLight(ambientLight) {
+        if (cameraHfov > 179) {
             throw std::invalid_argument("horizontal fov must be less than 180 degrees");
         }
         if (resolution_height == 0 || resolution_width == 0) {
             throw std::invalid_argument("resolution can not be 0");
         }
-        if (hfov * resolution_height / resolution_width > 179) {
+        if (cameraHfov * resolution_height / resolution_width > 179) {
             throw std::invalid_argument("vertical fov must be less than 180 degrees");
         }
         if (direction.norm() == 0) {
@@ -207,11 +208,12 @@ public:
     ~Camera() {}; //default destructor
 
     // Getters :
-    Point_3D get_position() const { return position; }
-    Vector_3D get_direction() const { return direction; }
-    unsigned get_hfov() const { return hfov; }
+    Point_3D get_position() const { return cameraPosition; }
+    Vector_3D get_direction() const { return cameraDirection; }
+    unsigned get_hfov() const { return cameraHfov; }
     unsigned get_resolution_height() const { return resolution_height; }
     unsigned get_resolution_width() const { return resolution_width; }
+    float get_ambient_light() const { return sceneAmbientLight; }
 
 
     Ray ray_launcher(unsigned pixel_height, unsigned pixel_width) {
@@ -219,12 +221,12 @@ public:
         // TODO : Check that the pixel coordinates are within the resolution, otherwise return an exception
 
         // The coordinates starts on the bottom left corner
-        Point_3D origin = Camera::position;
+        Point_3D origin = cameraPosition;
         // camera::direction defines the center of the image, when pixel_height = resolution_height/2 and pixel_width = resolution_width/2
         // We consider that the camera is not rotated along the y axis (compared to the default viewing direction along the y axis)
 
         // We need to cast the unsigned to floats to avoid integer division
-        float hfov_f = static_cast<float>(hfov);
+        float hfov_f = static_cast<float>(cameraHfov);
         float resolution_height_f = static_cast<float>(resolution_height);
         float resolution_width_f = static_cast<float>(resolution_width);
         float vfov_f = hfov_f * resolution_height_f / resolution_width_f; // Vertical field of view in degrees
@@ -232,7 +234,7 @@ public:
         float horizontal_angle = ((hfov_f / 2) * (pixel_width - resolution_width_f / 2 + 0.5) / (resolution_width / 2)) * M_PI / 180.0; // In radians. The second resolution_width/2 is integer division
         float vertical_angle = ((vfov_f / 2) * (pixel_height - resolution_height_f / 2 + 0.5) / (resolution_height / 2)) * M_PI / 180.0; // In radians
 
-        auto camera_direction_angles = direction.to_angles();
+        auto camera_direction_angles = cameraDirection.to_angles();
         float theta = camera_direction_angles.theta - vertical_angle;
         float phi = camera_direction_angles.phi - horizontal_angle;
 
@@ -307,14 +309,14 @@ public:
 class Object
 {
 protected:
-    std::string shape = "Object";
-    std::tuple<uint8_t, uint8_t, uint8_t> base_color = { 255,0,0 };
-    float reflectionCoeff = 0.5; // Entre 0 et 1
+    std::string objectShape = "Object";
+    std::tuple<uint8_t, uint8_t, uint8_t> objectColor = { 255,0,0 };
+    float objectReflectionCoeff = 0.2; // Entre 0 et 1
 public:
     // Getter :
-    std::string get_shape() const { return shape; }
-    std::tuple<uint8_t, uint8_t, uint8_t> get_color() const { return base_color; }
-    float get_reflectionCoeff() const { return reflectionCoeff; }
+    std::string get_shape() const { return objectShape; }
+    std::tuple<uint8_t, uint8_t, uint8_t> get_color() const { return objectColor; }
+    float get_reflectionCoeff() const { return objectReflectionCoeff; }
     // Methods
 
     // Method to find the intersection between the object and a ray
@@ -341,16 +343,13 @@ class Sphere : public Object
 {
     Point_3D center;
     float radius;
-
-protected:
-    std::string shape = "Sphere";
-
 public:
 
     // Constructor
-    Sphere(Point_3D c, float r) : center(c), radius(r) {};
-    Sphere(Point_3D c, float r, std::tuple<uint8_t, uint8_t, uint8_t> color) : center(c), radius(r) {
-        this->base_color = color;
+    Sphere(Point_3D c, float r, std::tuple<uint8_t, uint8_t, uint8_t> color = { 255,0,0 }, float reflectionCoeff = 0.2) : center(c), radius(r) {
+        objectShape = "Sphere";
+        objectColor = color;
+        objectReflectionCoeff = reflectionCoeff;
     };
 
     // Methods
@@ -405,16 +404,13 @@ class Plane : public Object
 {
     Point_3D origin;
     Vector_3D normalVector;
-    std::tuple<uint8_t, uint8_t, uint8_t> base_color;
-protected:
-    std::string shape = "Plane";
 public:
-
-
     // Constructor
-    Plane(Point_3D  o, Vector_3D nv) : origin(o), normalVector(nv) {};
-    Plane(Point_3D  o, Vector_3D nv, std::tuple<uint8_t, uint8_t, uint8_t> color) : origin(o), normalVector(nv), base_color(color) {};
-
+    Plane(Point_3D o, Vector_3D nv, std::tuple<uint8_t, uint8_t, uint8_t> color = { 255,0,0 }, float reflectionCoeff = 0.2) : origin(o), normalVector(nv) {
+        objectShape = "Plane";
+        objectColor = color;
+        objectReflectionCoeff = reflectionCoeff;
+    };
     // Methods
     std::optional<Point_3D> find_intersection(Ray myRay) const {
         Point_3D rayOrigin = myRay.get_origin();

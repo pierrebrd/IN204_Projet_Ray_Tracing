@@ -32,11 +32,11 @@ int create_scene(std::string fileName, Camera* cam, std::vector<Object*>* object
 
         if (objectShape == "camera") {
             float x, y, z, dx, dy, dz, r, g, b;
-            unsigned fov, width, height;
+            unsigned fov, width, height, depth;
             char braceL1, braceR1, braceL2, braceR2, braceL3, braceR3;
-            if (lineStream >> braceL1 >> x >> y >> z >> braceL1 >> braceL2 >> dx >> dy >> dz >> braceR2 >> fov >> width >> height >> braceL3 >> r >> g >> b >> braceR3) {
-                *cam = Camera(Point_3D(x, y, z), Vector_3D(dx, dy, dz), fov, width, height, { r,g,b });
-                std::cout << "pos (" << x << ", " << y << ", " << z << "), dir (" << dx << ", " << dy << ", " << dz << "), fov " << fov << ", resolution " << width << "x" << height << ", couleur ambiante (" << r << ", " << g << ", " << b << ")" << std::endl;
+            if (lineStream >> braceL1 >> x >> y >> z >> braceL1 >> braceL2 >> dx >> dy >> dz >> braceR2 >> fov >> width >> height >> braceL3 >> r >> g >> b >> braceR3 >> depth) {
+                *cam = Camera(Point_3D(x, y, z), Vector_3D(dx, dy, dz), fov, width, height, { r,g,b }, depth);
+                std::cout << "pos (" << x << ", " << y << ", " << z << "), dir (" << dx << ", " << dy << ", " << dz << "), fov " << fov << ", resolution " << width << "x" << height << ", couleur ambiante (" << r << ", " << g << ", " << b << ")" << ", profondeur reflets " << depth << std::endl;
             }
             else {
                 std::cerr << "Erreur. Camera : Format du texte erronée\n";

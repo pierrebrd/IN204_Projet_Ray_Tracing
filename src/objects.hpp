@@ -197,10 +197,11 @@ private:
     unsigned resolution_height;
     unsigned resolution_width;
     rgb sceneAmbientLight; // Couleur ambiante de la scène
+    unsigned reflection_depth = 4; // Profondeur de réflexion des rayons
 
 public:
     // Constructeur :
-    Camera(const Point_3D& position = { 0.f, 0.f, 0.f }, const Vector_3D& direction = { 0.f, 1.f, 0.f }, unsigned fov = 90, unsigned res_height = 200, unsigned res_width = 300, const rgb& ambientLight = { 0.2f,0.2f,0.2f }) : cameraPosition(position), cameraDirection(direction), cameraHfov(fov), resolution_height(res_height), resolution_width(res_width), sceneAmbientLight(ambientLight) {
+    Camera(const Point_3D& position = { 0.f, 0.f, 0.f }, const Vector_3D& direction = { 0.f, 1.f, 0.f }, unsigned fov = 90, unsigned res_height = 200, unsigned res_width = 300, const rgb& ambientLight = { 0.2f,0.2f,0.2f }, unsigned depth = 4) : cameraPosition(position), cameraDirection(direction), cameraHfov(fov), resolution_height(res_height), resolution_width(res_width), sceneAmbientLight(ambientLight), reflection_depth(depth) {
         if (cameraHfov > 179) {
             throw std::invalid_argument("horizontal fov must be less than 180 degrees");
         }
@@ -222,6 +223,7 @@ public:
     unsigned get_resolution_height() const { return resolution_height; }
     unsigned get_resolution_width() const { return resolution_width; }
     rgb get_ambient_light() const { return sceneAmbientLight; }
+    unsigned get_reflection_depth() const { return reflection_depth; }
 
 
     Ray ray_launcher(unsigned pixel_height, unsigned pixel_width) const {

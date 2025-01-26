@@ -13,7 +13,6 @@
 #include "objects.hpp"
 
 
-#define DEPTH 20 // Profondeur de réflexion des rayons
 
 std::optional<std::pair<Point_3D, Object*>> findNextIntersection(const Ray& myRay, const std::vector<Object*>* objects) {
     // A partir d'un rayon donné (qui arrive à la caméra), lui associer un RGB en fonction des obstacles que rencontre le rayon.
@@ -73,7 +72,7 @@ rgb determineLightIntensity_Diffuse(const Point_3D& intersection, const Object* 
         Ray nextRay(intersection, Vector_3D(intersection, (*it)->get_position()));
         auto nextIntersection = findNextIntersection(nextRay, objects);
         rgb  currentIntensity;
-        if (nextIntersection.has_value() && nextIntersection.value().first.distanceTo(intersection) > THRESHOLD && nextIntersection.value().first.distanceTo(intersection) < (*it)->get_position().distanceTo(intersection)) { // arbitraire de fou
+        if (nextIntersection.has_value() && nextIntersection.value().first.distanceTo(intersection) > THRESHOLD && nextIntersection.value().first.distanceTo(intersection) < (*it)->get_position().distanceTo(intersection)) {
             // Si le rayon rencontre un objet avant la source de lumière
             currentIntensity = { 0.f,0.f,0.f };
         }
@@ -128,7 +127,7 @@ rgb determineLightIntensity(const Point_3D& intersection, const Object* intersec
 }
 
 
-rgb compute_color(const Ray& myRay, const Camera* cam, const std::vector<Object*>* objects, const std::vector<Light*>* lights, int depth) {
+rgb compute_color(const Ray& myRay, const Camera* cam, const std::vector<Object*>* objects, const std::vector<Light*>* lights) {
     // Fonction qui cherche une intersection et calcule la couleur en appelant récursivement les fonctions de lumière
     auto nextIntersect = findNextIntersection(myRay, objects);
     if (!nextIntersect.has_value()) {
@@ -137,7 +136,7 @@ rgb compute_color(const Ray& myRay, const Camera* cam, const std::vector<Object*
     else {
         Point_3D intersection = nextIntersect.value().first;
         Object* intersected_object = nextIntersect.value().second;
-        rgb lightIntensity = determineLightIntensity(intersection, intersected_object, cam->get_ambient_light(), lights, objects, myRay, depth); // On calcule l'intensité lumineuse reçue en considérant la profondeur de calcul
+        rgb lightIntensity = determineLightIntensity(intersection, intersected_object, cam->get_ambient_light(), lights, objects, myRay, cam->get_reflection_depth() + 1); // On calcule l'intensité lumineuse reçue en considérant la profondeur de calcul
         auto object_color = intersected_object->get_color();
         auto value = lightIntensity * object_color;
         return { lightIntensity * object_color };
@@ -164,7 +163,7 @@ void image_creator(const Camera* cam, const std::vector<Object*>* objects, const
             Ray initial_Ray = cam->ray_launcher(cam->get_resolution_height() - i - 1, j);
 
             // On cherche la couleur associée à ce pixel
-            rgb colors = compute_color(initial_Ray, cam, objects, lights, DEPTH);
+            rgb colors = compute_color(initial_Ray, cam, objects, lights);
             colors = minTuple(colors, { 1.f,1.f,1.f }); // On cappe les valeurs à 1
 
             // On écrit les valeurs dans le buffer
@@ -190,9 +189,6 @@ void image_creator(const Camera* cam, const std::vector<Object*>* objects, const
     std::cout << "\rImage sauvegardée : " << filename << std::endl;
     return;
 }
-
-
-
 
 
 #endif

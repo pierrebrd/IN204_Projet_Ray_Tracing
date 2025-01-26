@@ -1,11 +1,11 @@
-# Pour la camera  Position, Direction, FOV, résolution, lumière ambiante
+# Pour la camera  Position, Direction, FOV, résolution, lumière ambiante, profondeur réflexions
 # Pour les lumières : Position, couleur
 # Pour les sphères : Position, rayon, couleur, réflexion diffuse et spéculaire
 # Pour les plans : Position, vecteur normal, couleur, réflexion diffuse et spéculaire
 
 
 camera
-{ 0 0 0 } { 0 1 0 } 90 400 600 { 0 0 0 }
+{ 0 0 0 } { 0 1 0 } 90 600 800 { 0 0 0 } 30
 
 sphere
 { 0 3 1 } 0.5 { 1 1 1 } 1 0

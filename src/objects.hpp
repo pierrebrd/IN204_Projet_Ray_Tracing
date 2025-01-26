@@ -14,6 +14,8 @@ Ce fichier contiendra les classes concernant les rayons et leur suivi
 #include <string>
 #include <cstdint>
 
+#define TRESHOLD 0.001f
+
 using rgb = std::tuple<float, float, float>; // A color, a light, a pixel, etc. is represented by a tuple of 3 floats between 0 and 1
 
 struct Point_3D
@@ -25,7 +27,7 @@ struct Point_3D
     float z;
 
     // Constructeurs
-    Point_3D(float x_coord, float y_coord, float z_coord) : x(x_coord), y(y_coord), z(z_coord) {}
+    inline Point_3D(float x_coord, float y_coord, float z_coord) : x(x_coord), y(y_coord), z(z_coord) {}
 
     //Point_3D(const Vector_3D vector): x(vector.x), y(vector.y), z(vector.z) {}
 
@@ -58,12 +60,12 @@ struct Vector_3D
 
     // Constructeurs
         // à partir des coordonnées cartésiennes
-    Vector_3D(float x_coord, float y_coord, float z_coord) : x(x_coord), y(y_coord), z(z_coord) {}
+    inline Vector_3D(float x_coord, float y_coord, float z_coord) : x(x_coord), y(y_coord), z(z_coord) {}
 
     // à partir de deux points Point_3D (P2-P1)
-    Vector_3D(Point_3D P1, Point_3D P2) : x(P2.x - P1.x), y(P2.y - P1.y), z(P2.z - P1.z) {}
+    inline Vector_3D(const Point_3D& P1, const Point_3D& P2) : x(P2.x - P1.x), y(P2.y - P1.y), z(P2.z - P1.z) {}
 
-    Vector_3D(const Point_3D point) : x(point.x), y(point.y), z(point.z) {}
+    inline Vector_3D(const Point_3D& point) : x(point.x), y(point.y), z(point.z) {}
 
     // Méthodes
     float norm() const {
@@ -84,22 +86,22 @@ struct Vector_3D
 };
 
 // Opérateurs globaux
-float operator * (Vector_3D aLeftVector, Vector_3D aRightVector) {
+inline float operator * (const Vector_3D& aLeftVector, const Vector_3D& aRightVector) {
     // Définition du produit scalaire
     return aRightVector.x * aLeftVector.x + aRightVector.y * aLeftVector.y + aRightVector.z * aLeftVector.z;
 }
-Vector_3D operator * (float aFloat, Vector_3D aRightVector) {
+inline Vector_3D operator * (float aFloat, const Vector_3D& aRightVector) {
     // Multiplication par un scalaire
     return Vector_3D(aFloat * aRightVector.x, aFloat * aRightVector.y, aFloat * aRightVector.z);
 }
 
-Vector_3D operator - (Vector_3D aLeftPoint, Vector_3D aRightPoint) {
+inline Vector_3D operator - (const Vector_3D& aLeftPoint, const Vector_3D& aRightPoint) {
     // Définition d'un vecteur à partir de deux points
     Vector_3D vector = Vector_3D(aLeftPoint.x - aRightPoint.x, aLeftPoint.y - aRightPoint.y, aLeftPoint.z - aRightPoint.z);
     return vector;
 }
 
-Point_3D operator + (Point_3D aLeftPoint, Vector_3D aRightVector) {
+inline Point_3D operator + (Point_3D aLeftPoint, const Vector_3D& aRightVector) {
     // Somme d'un point et d'un vecteur
     Point_3D resultPoint = Point_3D(aLeftPoint.x + aRightVector.x, aLeftPoint.y + aRightVector.y, aLeftPoint.z + aRightVector.z);
     return resultPoint;
@@ -108,7 +110,7 @@ Point_3D operator + (Point_3D aLeftPoint, Vector_3D aRightVector) {
 // Fonction pour normaliser un vecteur 
 Vector_3D normalize(Vector_3D vector) {
     float norm = vector.norm();
-    if (norm == 0) {
+    if (norm == 0.f) {
         throw std::invalid_argument("The norm of the vector is null, it can not be normalized");
     }
     return Vector_3D(vector.x / norm, vector.y / norm, vector.z / norm);
@@ -116,19 +118,19 @@ Vector_3D normalize(Vector_3D vector) {
 }
 
 // Opérateurs globaux pour les tuples
-rgb operator +(rgb aLeftTuple, rgb aRightTuple) {
+inline rgb operator +(const rgb& aLeftTuple, const rgb& aRightTuple) {
     return { std::get<0>(aLeftTuple) + std::get<0>(aRightTuple),std::get<1>(aLeftTuple) + std::get<1>(aRightTuple),std::get<2>(aLeftTuple) + std::get<2>(aRightTuple) };
 }
 
-rgb operator *(float aFloat, rgb aRightTuple) {
+inline rgb operator *(float aFloat, const rgb& aRightTuple) {
     return { aFloat * std::get<0>(aRightTuple),aFloat * std::get<1>(aRightTuple),aFloat * std::get<2>(aRightTuple) };
 }
 
-rgb operator *(rgb aLeftTuple, rgb aRightTuple) {
+inline rgb operator *(const rgb& aLeftTuple, const rgb& aRightTuple) {
     return { std::get<0>(aLeftTuple) * std::get<0>(aRightTuple),std::get<1>(aLeftTuple) * std::get<1>(aRightTuple),std::get<2>(aLeftTuple) * std::get<2>(aRightTuple) };
 }
 
-rgb minTuple(rgb tuple1, rgb tuple2) {
+inline rgb minTuple(const rgb& tuple1, const rgb& tuple2) {
     return { std::min(std::get<0>(tuple1),std::get<0>(tuple2)),std::min(std::get<1>(tuple1),std::get<1>(tuple2)),std::min(std::get<2>(tuple1),std::get<2>(tuple2)) };
 }
 
@@ -169,7 +171,7 @@ Vector_3D Angles_Spherical::to_vector() const {
 Angles_Spherical Vector_3D::to_angles() const {
     // Returns the angles of the vector in spherical coordinates
     auto r = norm();
-    if (r == 0) {
+    if (r == 0.f) {
         throw std::invalid_argument("The vector is null, it has no angles");
     }
     float theta = std::acos(z / r); // Angle with the z axis
@@ -208,7 +210,7 @@ private:
 
 public:
     // Constructor :
-    Camera(Point_3D position = { 0, 0, 0 }, Vector_3D direction = { 0, 1, 0 }, unsigned fov = 90, unsigned res_height = 200, unsigned res_width = 300, rgb ambientLight = { 0.2,0.2,0.2 }) : cameraPosition(position), cameraDirection(direction), cameraHfov(fov), resolution_height(res_height), resolution_width(res_width), sceneAmbientLight(ambientLight) {
+    Camera(Point_3D position = { 0.f, 0.f, 0.f }, Vector_3D direction = { 0.f, 1.f, 0.f }, unsigned fov = 90, unsigned res_height = 200, unsigned res_width = 300, rgb ambientLight = { 0.2f,0.2f,0.2f }) : cameraPosition(position), cameraDirection(direction), cameraHfov(fov), resolution_height(res_height), resolution_width(res_width), sceneAmbientLight(ambientLight) {
         if (cameraHfov > 179) {
             throw std::invalid_argument("horizontal fov must be less than 180 degrees");
         }
@@ -218,7 +220,7 @@ public:
         if (cameraHfov * resolution_height / resolution_width > 179) {
             throw std::invalid_argument("vertical fov must be less than 180 degrees");
         }
-        if (direction.norm() == 0) {
+        if (direction.norm() == 0.f) {
             throw std::invalid_argument("The direction vector of the camera can not be null");
         }
     }
@@ -250,8 +252,8 @@ public:
         float resolution_width_f = static_cast<float>(resolution_width);
         float vfov_f = hfov_f * resolution_height_f / resolution_width_f; // Vertical field of view in degrees
 
-        float horizontal_angle = ((hfov_f / 2) * (pixel_width - resolution_width_f / 2 + 0.5) / (resolution_width / 2)) * M_PI / 180.0; // In radians. The second resolution_width/2 is integer division
-        float vertical_angle = ((vfov_f / 2) * (pixel_height - resolution_height_f / 2 + 0.5) / (resolution_height / 2)) * M_PI / 180.0; // In radians
+        float horizontal_angle = ((hfov_f / 2) * (pixel_width - resolution_width_f / 2 + 0.5f) / (resolution_width / 2)) * M_PI / 180.0f; // In radians. The second resolution_width/2 is integer division
+        float vertical_angle = ((vfov_f / 2) * (pixel_height - resolution_height_f / 2 + 0.5f) / (resolution_height / 2)) * M_PI / 180.0f; // In radians
 
         auto camera_direction_angles = cameraDirection.to_angles();
         float theta = camera_direction_angles.theta - vertical_angle;
@@ -281,14 +283,7 @@ protected:
     std::string type = "PointLight";
 public:
     // Constructor
-    Light(Point_3D pos = { 0, 0, 0 }, rgb i = { 1.0,1.0,1.0 }) : position(pos), light_color(i) {
-        /*if (intensity <= {0,0,0}) {
-            throw std::invalid_argument("The intensity of the light must be positive");
-        }
-        */
-    }
-
-
+    Light(Point_3D pos = { 0.f, 0.f, 0.f }, rgb i = { 1.0f,1.0f,1.0f }) : position(pos), light_color(i) {}
     // Getters
     Point_3D get_position() const { return position; }
     rgb  get_light_color() const { return light_color; }
@@ -303,18 +298,18 @@ public:
             light_vector = normalize(light_vector);
         }
         catch (std::invalid_argument error) {
-            return { 0,0,0 };
+            return { 0.f,0.f,0.f };
         }
         try {
             normal_vector = normalize(normal_vector);
         }
         catch (std::invalid_argument error) {
-            return { 0,0,0 };
+            return { 0.f,0.f,0.f };
         }
 
         rgb lighting_intensity = (std::abs(light_vector * normal_vector)) * light_color;
         // if (lighting_intensity < 0){
-        //     return 0.;
+        //     return 0.f;
         // }
         return lighting_intensity;
     }
@@ -328,17 +323,22 @@ class Object
 {
 protected:
     std::string objectShape = "Object";
-    rgb objectColor = { 1,0,0 }; // RGB tuples de float entre 0 et 1
-    float objectReflectionCoeff = 0.2; // Entre 0 et 1
+    rgb objectColor = { 1.f,0.f,0.f }; // RGB tuples de float entre 0 et 1
+    float objectDiffuseReflection = 1.0f; // Réflection diffuse (dans toutes les directions de l'espace)
+    float objectSpecularReflection = 0.2f; // Réflection spéculaire (effet miroir)
 public:
-    // Getter :
+    // Getters :
     std::string get_shape() const { return objectShape; }
     rgb get_color() const { return objectColor; }
-    float get_reflectionCoeff() const { return objectReflectionCoeff; }
+    float get_diffuseCoeff() const { return objectDiffuseReflection; }
+    float get_specularCoeff() const { return objectSpecularReflection; }
+
+
+
     // Methods
 
     // Method to find the intersection between the object and a ray
-    virtual std::optional<Point_3D> find_intersection(Ray myRay) const = 0;
+    virtual std::optional<Point_3D> find_intersection(const Ray& myRay) const = 0;
 
     // Method to compute the normal vector at a point
     virtual Vector_3D get_normal(Point_3D point) const = 0;
@@ -350,6 +350,7 @@ public:
         // Hypothèse : u et n de norme 1
         Point_3D rayOrigin = myRay.get_origin();
         Vector_3D rayDirection = normalize(myRay.get_direction()); // u
+        normal = normalize(normal); // n
         Vector_3D reflectedRayDirection = rayDirection - 2 * (rayDirection * normal) * normal;
         return Ray(pointOfReflection, reflectedRayDirection);
     }
@@ -364,43 +365,47 @@ class Sphere : public Object
 public:
 
     // Constructor
-    Sphere(Point_3D c, float r, rgb color = { 1,0,0 }, float reflectionCoeff = 0.2) : center(c), radius(r) {
+    Sphere(Point_3D c, float r, rgb color = { 1.f,0.f,0.f }, float diffuseCoeff = 1.f, float specularCoeff = 0.2f) : center(c), radius(r) {
         objectShape = "Sphere";
         objectColor = color;
-        objectReflectionCoeff = reflectionCoeff;
+        objectDiffuseReflection = diffuseCoeff;
+        objectSpecularReflection = specularCoeff;
     };
 
     // Methods
-    std::optional<Point_3D> find_intersection(Ray myRay) const {
+    std::optional<Point_3D> find_intersection(const Ray& myRay) const {
         Point_3D rayOrigin = myRay.get_origin();
         Vector_3D rayDirection = myRay.get_direction();
 
+        Vector_3D originToSphere = Vector_3D(center, rayOrigin);
+
         // Equation du 2nd degré à résoudre du type a*t^2 + b*t + c = 0
         float a = rayDirection * rayDirection;
-        float b = 2 * (rayDirection * (Vector_3D(center, rayOrigin)));
-        float c = (Vector_3D(center, rayOrigin) * Vector_3D(center, rayOrigin)) - radius * radius;
-        float delta = b * b - 4 * a * c; // discriminant
+        float b = 2.0f * (rayDirection * originToSphere);
+        float c = (originToSphere * originToSphere) - radius * radius;
+        float delta = b * b - 4.0f * a * c; // discriminant
 
-        if (delta < 0) {
+        if (delta < 0.f) {
             // Pas d'intersection
             return std::nullopt;
         }
         float t;
-        if (delta == 0) {
-            t = -b / (2 * a);
+        if (delta == 0.f) {
+            t = -b / (2.f * a);
         }
         else {
-            float t1 = (-b + std::sqrt(delta)) / (2 * a);
-            float t2 = (-b - std::sqrt(delta)) / (2 * a);
+            float sqrt_delta = std::sqrt(delta);
+            float t1 = (-b + sqrt_delta) / (2.f * a);
+            float t2 = (-b - sqrt_delta) / (2.f * a);
             // Rq : t2 < t1
-            if (t1 <= 0 && t2 <= 0) { // On est du mauvais côté du rayon si les deux valeurs négatives
+            if (t1 <= 0.f && t2 <= 0.f) { // On est du mauvais côté du rayon si les deux valeurs négatives
                 return std::nullopt;
             }
-            else if (t2 > 0.001f) { // Sinon, on prend la positive la plus petite.
+            else if (t2 > TRESHOLD) { // Sinon, on prend la positive la plus petite.
                 t = t2;
             }
-            // t2 < 0.001f
-            else if (t1 > 0.001f) {
+            // t2 < TRESHOLD
+            else if (t1 > TRESHOLD) {
                 t = t1;
             }
             else {
@@ -424,17 +429,18 @@ class Plane : public Object
     Vector_3D normalVector;
 public:
     // Constructor
-    Plane(Point_3D o, Vector_3D nv, rgb color = { 1,0,0 }, float reflectionCoeff = 0.2) : origin(o), normalVector(nv) {
+    Plane(Point_3D o, Vector_3D nv, rgb color = { 1.f,0.f,0.f }, float diffuseCoeff = 1.f, float specularCoeff = 0.2f) : origin(o), normalVector(nv) {
         objectShape = "Plane";
         objectColor = color;
-        objectReflectionCoeff = reflectionCoeff;
+        objectDiffuseReflection = diffuseCoeff;
+        objectSpecularReflection = specularCoeff;
     };
     // Methods
-    std::optional<Point_3D> find_intersection(Ray myRay) const {
+    std::optional<Point_3D> find_intersection(const Ray& myRay) const {
         Point_3D rayOrigin = myRay.get_origin();
         Vector_3D rayDirection = myRay.get_direction();
 
-        if (normalVector * rayDirection == 0) {
+        if (normalVector * rayDirection == 0.f) {
             // La droite est parallèle au plan
             // On exclut le cas où la droite du rayon appartient au plan
             // Cas où il n'y a pas d'intersection
@@ -442,7 +448,7 @@ public:
         }
 
         float t = (normalVector * (Vector_3D(rayOrigin, origin))) / (normalVector * rayDirection);
-        if (t < 0.001f) {
+        if (t < TRESHOLD) {
             return std::nullopt;
         }
         Point_3D intersection = rayOrigin + t * rayDirection;

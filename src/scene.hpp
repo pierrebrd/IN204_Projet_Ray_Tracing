@@ -84,9 +84,10 @@ rgb determineLightIntensity_Reflection(Point_3D intersection, Object* intersecte
     float reflectionCoeff = intersected_object->get_reflectionCoeff();
     Point_3D nextIntersection = nextIntersectionPair.value().first;
     Object* nextIntersectedObject = nextIntersectionPair.value().second;
+    rgb nextIntersectedObjectColor = nextIntersectedObject->get_color();
     rgb lightIntensity = determineLightIntensity_Shadow(nextIntersection, nextIntersectedObject, lights, objects);
     // On ne fait pas réfléchir le rayon une autre fois sur l'objet, donc on utilise bien la fonctino ..._Shadow
-    return reflectionCoeff * lightIntensity;
+    return reflectionCoeff * lightIntensity * nextIntersectedObjectColor;
 }
 
 
@@ -97,7 +98,9 @@ rgb determineLightIntensity(Point_3D intersection, Object* intersected_object, C
     rgb lightIntensityShadow = determineLightIntensity_Shadow(intersection, intersected_object, lights, objects);
     rgb lightIntensityReflection = determineLightIntensity_Reflection(intersection, intersected_object, lights, objects, incidentRay);
     rgb lightIntensityAmbient = cam->get_ambient_light();
-    return minTuple(lightIntensityReflection + lightIntensityShadow + lightIntensityAmbient, { 1,1,1 }); // TODO : Enlever le min ?
+    rgb sum = lightIntensityReflection + lightIntensityShadow + lightIntensityAmbient;
+    std::cout << std::get<0>(sum) << " " << std::get<1>(sum) << " " << std::get<2>(sum) << std::endl;
+    return minTuple(sum, { 10.,10.,10. }); // TODO : Enlever le min ? en gros ça ferait qu'o, pourrait rentre l'objet plus lumin,eux qu'il ne l'est réellement, mais il faudrait capper dans la dernière fonction
 }
 
 
@@ -111,6 +114,9 @@ rgb compute_color(Ray myRay, Camera* cam, std::vector<Object*>* objects, std::ve
         Object* intersected_object = nextIntersect.value().second;
         rgb lightIntensity = determineLightIntensity(intersection, intersected_object, cam, lights, objects, myRay);
         auto object_color = intersected_object->get_color();
+        std::cout << "Object color : " << std::get<0>(object_color) << " " << std::get<1>(object_color) << " " << std::get<2>(object_color) << std::endl;
+        auto value = lightIntensity * object_color;
+        std::cout << "Color product : " << std::get<0>(value) << " " << std::get<1>(value) << " " << std::get<2>(value) << std::endl;
         return { lightIntensity * object_color };
 
     }
@@ -138,8 +144,10 @@ void image_creator(Camera* cam, std::vector<Object*>* objects, std::vector<Light
             Ray initial_Ray = cam->ray_launcher(cam->get_resolution_height() - i - 1, j);
             // We calculate the color of the pixel 
             rgb colors = compute_color(initial_Ray, cam, objects, lights);
+            colors = minTuple(colors, { 1.,1.,1. }); // We cap the color to 1
+            std::cout << "Color : " << std::get<0>(colors) << " " << std::get<1>(colors) << " " << std::get<2>(colors) << std::endl;
             // We write the color in the file 
-            file << static_cast<int>(std::get<0>(colors) * 255) << " " << static_cast<int>(std::get<1>(colors) * 255) << " " << static_cast<int>(std::get<2>(colors) * 255) << " ";
+            file << static_cast<int>(std::get<0>(colors) * 255.) << " " << static_cast<int>(std::get<1>(colors) * 255.) << " " << static_cast<int>(std::get<2>(colors) * 255.) << " ";
             file.flush();
         }
         file << std::endl;

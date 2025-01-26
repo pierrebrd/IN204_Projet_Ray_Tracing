@@ -13,3 +13,7 @@
 
 .vscode/*
 .vscode/
+
+# Files related to this project
+
+*.ppm

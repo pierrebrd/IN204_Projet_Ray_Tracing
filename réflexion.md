@@ -134,3 +134,6 @@ TODO :
 - Lampes pas blanches
 - Valeur universelle des Treshold
 - plan avec vecteur normal dans le mauvais sens
+- trop moche de faire des opérateurs pour les vectuers et d'autres pour les tuples -> a moitié fait, mais pas de récursion
+
+Je pense qu'il faudrait mettre en place des fonctions plus "récursives" pour calculer les propagrations de rayons qui rebondissent etc. réfléchir à ce que l'on prend en compte, si on calcul toutes les illuminations pour chaquye rebond ou pas etc.

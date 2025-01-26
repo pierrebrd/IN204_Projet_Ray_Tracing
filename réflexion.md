@@ -17,7 +17,7 @@ Etape 1
 Phase A
 Différentes méthodes :
 - ray tracing
-- les rayons partent ducaméra/oeil pour aller vers la source lumineuse (principe de retour inverse)
+- les rayons partent du caméra/oeil pour aller vers la source lumineuse (principe de retour inverse)
 - source lumineuse : ce sont des points dans l'espace, la plupart des rayons partant de la source se retrouveraient hors de la source. Il y aurait trop de calculs inutiles.
 
 Calculs vectoriels :
@@ -127,13 +127,3 @@ Problèmes successifs :
 * le côté de la sphère non éclairé était noir, pas d'ombre d'une sphère sur l'autre
 * affichage que d'un seul objet
 * rayon réfléchis sur le plan n'éclairent pas l'arrière de la sphère
-
-
-TODO :
-- Mettre des const partout ou il faut !!
-- Lampes pas blanches
-- Valeur universelle des Treshold
-- plan avec vecteur normal dans le mauvais sens
-- trop moche de faire des opérateurs pour les vectuers et d'autres pour les tuples -> a moitié fait, mais pas de récursion
-
-Je pense qu'il faudrait mettre en place des fonctions plus "récursives" pour calculer les propagrations de rayons qui rebondissent etc. réfléchir à ce que l'on prend en compte, si on calcul toutes les illuminations pour chaquye rebond ou pas etc.

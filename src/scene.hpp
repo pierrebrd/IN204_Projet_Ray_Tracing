@@ -45,19 +45,19 @@ std::optional<std::pair<Point_3D, Object*>> findNextIntersection(Ray myRay, std:
     return std::make_pair(closestIntersec.value(), closestObjectPt);
 }
 
-std::tuple<float, float, float> determineLightIntensity_Shadow(Point_3D intersection, Object* intersected_object, std::vector<Light>* lights, std::vector<Object*>* objects) {
+rgb determineLightIntensity_Shadow(Point_3D intersection, Object* intersected_object, std::vector<Light>* lights, std::vector<Object*>* objects) {
     std::vector<Light>::iterator it = lights->begin();
 
     Vector_3D normal = intersected_object->get_normal(intersection);
 
-    std::tuple<float, float, float>  lightIntensityShadow = { 0,0,0 };
+    rgb  lightIntensityShadow = { 0,0,0 }; // Initialisation
     // Rayons d'ombre
-    for (;it != lights->end(); it++) {
+    for (;it != lights->end(); it++) { // Pour chaque source de lumière
         Ray nextRay(intersection, Vector_3D(intersection, it->get_position()));
         auto nextIntersection = findNextIntersection(nextRay, objects);
-        std::tuple<float, float, float>  currentIntensity;
-        if (nextIntersection.has_value() && nextIntersection.value().first.distanceTo(intersection) > 0.001) { // arbitraire de fou
-            // Si le rayon ne rencontre pas d'objet entre le point et la source
+        rgb  currentIntensity;
+        if (nextIntersection.has_value() && nextIntersection.value().first.distanceTo(intersection) > 0.001 && nextIntersection.value().first.distanceTo(intersection) < it->get_position().distanceTo(intersection)) { // arbitraire de fou
+            // Si le rayon rencontre un objet avant la source de lumière
             currentIntensity = { 0,0,0 };
         }
         else {
@@ -68,7 +68,7 @@ std::tuple<float, float, float> determineLightIntensity_Shadow(Point_3D intersec
     return lightIntensityShadow;
 }
 
-std::tuple<float, float, float> determineLightIntensity_Reflection(Point_3D intersection, Object* intersected_object, std::vector<Light>* lights, std::vector<Object*>* objects, Ray incidentRay) {
+rgb determineLightIntensity_Reflection(Point_3D intersection, Object* intersected_object, std::vector<Light>* lights, std::vector<Object*>* objects, Ray incidentRay) {
     // Rayon réfléchi
     // On permet aux rayons de se réflechir une fois. 
     // A reflection ray is traced in the mirror-reflection direction. The closest object it intersects is what will be seen in the reflection
@@ -84,20 +84,24 @@ std::tuple<float, float, float> determineLightIntensity_Reflection(Point_3D inte
     float reflectionCoeff = intersected_object->get_reflectionCoeff();
     Point_3D nextIntersection = nextIntersectionPair.value().first;
     Object* nextIntersectedObject = nextIntersectionPair.value().second;
-    std::tuple<float, float, float> lightIntensity = determineLightIntensity_Shadow(nextIntersection, nextIntersectedObject, lights, objects);
+    rgb lightIntensity = determineLightIntensity_Shadow(nextIntersection, nextIntersectedObject, lights, objects);
     // On ne fait pas réfléchir le rayon une autre fois sur l'objet, donc on utilise bien la fonctino ..._Shadow
     return reflectionCoeff * lightIntensity;
 }
 
-std::tuple<float, float, float> determineLightIntensity(Point_3D intersection, Object* intersected_object, Camera* cam, std::vector<Light>* lights, std::vector<Object*>* objects, Ray incidentRay) {
-    std::tuple<float, float, float> lightIntensityShadow = determineLightIntensity_Shadow(intersection, intersected_object, lights, objects);
-    std::tuple<float, float, float> lightIntensityReflection = determineLightIntensity_Reflection(intersection, intersected_object, lights, objects, incidentRay);
-    std::tuple<float, float, float> lightIntensityAmbient = cam->get_ambient_light();
-    return minTuple(lightIntensityReflection + lightIntensityShadow + lightIntensityAmbient, { 1,1,1 });
+
+
+// TODO : gros poblème, on prend ne comprte la lumière qui arrive sur l'objetsur lequel on rebondit mais pas sa couleur !!!!!!!!
+
+rgb determineLightIntensity(Point_3D intersection, Object* intersected_object, Camera* cam, std::vector<Light>* lights, std::vector<Object*>* objects, Ray incidentRay) {
+    rgb lightIntensityShadow = determineLightIntensity_Shadow(intersection, intersected_object, lights, objects);
+    rgb lightIntensityReflection = determineLightIntensity_Reflection(intersection, intersected_object, lights, objects, incidentRay);
+    rgb lightIntensityAmbient = cam->get_ambient_light();
+    return minTuple(lightIntensityReflection + lightIntensityShadow + lightIntensityAmbient, { 1,1,1 }); // TODO : Enlever le min ?
 }
 
 
-std::tuple<float, float, float> compute_color(Ray myRay, Camera* cam, std::vector<Object*>* objects, std::vector<Light>* lights) {
+rgb compute_color(Ray myRay, Camera* cam, std::vector<Object*>* objects, std::vector<Light>* lights) {
     auto nextIntersect = findNextIntersection(myRay, objects);
     if (!nextIntersect.has_value()) {
         return { 0,0,0 };
@@ -105,11 +109,9 @@ std::tuple<float, float, float> compute_color(Ray myRay, Camera* cam, std::vecto
     else {
         Point_3D intersection = nextIntersect.value().first;
         Object* intersected_object = nextIntersect.value().second;
-        std::tuple<float, float, float> lightIntensity = determineLightIntensity(intersection, intersected_object, cam, lights, objects, myRay);
+        rgb lightIntensity = determineLightIntensity(intersection, intersected_object, cam, lights, objects, myRay);
         auto object_color = intersected_object->get_color();
-        return { static_cast<float>(std::get<0>(lightIntensity) * std::get<0>(object_color)),
-                static_cast<float>(std::get<1>(lightIntensity) * std::get<1>(object_color)),
-                static_cast<float>(std::get<2>(lightIntensity) * std::get<2>(object_color)) };
+        return { lightIntensity * object_color };
 
     }
 
@@ -135,14 +137,16 @@ void image_creator(Camera* cam, std::vector<Object*>* objects, std::vector<Light
             // We lauch the ray from the camera
             Ray initial_Ray = cam->ray_launcher(cam->get_resolution_height() - i - 1, j);
             // We calculate the color of the pixel 
-            std::tuple<float, float, float> colors = compute_color(initial_Ray, cam, objects, lights);
+            rgb colors = compute_color(initial_Ray, cam, objects, lights);
             // We write the color in the file 
             file << static_cast<int>(std::get<0>(colors) * 255) << " " << static_cast<int>(std::get<1>(colors) * 255) << " " << static_cast<int>(std::get<2>(colors) * 255) << " ";
             file.flush();
         }
         file << std::endl;
-        std::cout << "\rLine " << i << " done";
-        std::cout.flush();
+        if (i % 100 == 0) {
+            std::cout << "\rLine " << i << " done";
+            std::cout.flush();
+        }
     }
     file.close();
     std::cout << "\rThe image has been created and saved as " << filename << std::endl;

@@ -14,6 +14,8 @@ Ce fichier contiendra les classes concernant les rayons et leur suivi
 #include <string>
 #include <cstdint>
 
+using rgb = std::tuple<float, float, float>; // A color, a light, a pixel, etc. is represented by a tuple of 3 floats between 0 and 1
+
 struct Point_3D
 {
     // Represents a point in 3D space
@@ -93,7 +95,7 @@ Vector_3D operator * (float aFloat, Vector_3D aRightVector) {
 
 Vector_3D operator - (Vector_3D aLeftPoint, Vector_3D aRightPoint) {
     // Définition d'un vecteur à partir de deux points
-    Vector_3D vector = Vector_3D(aRightPoint.x - aLeftPoint.x, aRightPoint.y - aLeftPoint.y, aRightPoint.z - aLeftPoint.z);
+    Vector_3D vector = Vector_3D(aLeftPoint.x - aRightPoint.x, aLeftPoint.y - aRightPoint.y, aLeftPoint.z - aRightPoint.z);
     return vector;
 }
 
@@ -114,21 +116,27 @@ Vector_3D normalize(Vector_3D vector) {
 }
 
 // Opérateurs globaux pour les tuples
-std::tuple<float, float, float> operator +(std::tuple<float, float, float> aLeftTuple, std::tuple<float, float, float> aRightTuple) {
+rgb operator +(rgb aLeftTuple, rgb aRightTuple) {
     return { std::get<0>(aLeftTuple) + std::get<0>(aRightTuple),std::get<1>(aLeftTuple) + std::get<1>(aRightTuple),std::get<2>(aLeftTuple) + std::get<2>(aRightTuple) };
 }
 
-std::tuple<float, float, float> operator *(float aFloat, std::tuple<float, float, float> aRightTuple) {
+rgb operator *(float aFloat, rgb aRightTuple) {
     return { aFloat * std::get<0>(aRightTuple),aFloat * std::get<1>(aRightTuple),aFloat * std::get<2>(aRightTuple) };
 }
 
-std::tuple<float, float, float> minTuple(std::tuple<float, float, float> tuple1, std::tuple<float, float, float> tuple2) {
+rgb operator *(rgb aLeftTuple, rgb aRightTuple) {
+    return { std::get<0>(aLeftTuple) * std::get<0>(aRightTuple),std::get<1>(aLeftTuple) * std::get<1>(aRightTuple),std::get<2>(aLeftTuple) * std::get<2>(aRightTuple) };
+}
+
+rgb minTuple(rgb tuple1, rgb tuple2) {
     return { std::min(std::get<0>(tuple1),std::get<0>(tuple2)),std::min(std::get<1>(tuple1),std::get<1>(tuple2)),std::min(std::get<2>(tuple1),std::get<2>(tuple2)) };
 }
 
 float Point_3D::distanceTo(Point_3D anotherPoint) {
     return Vector_3D(Point_3D(x, y, z), anotherPoint).norm();
 }
+
+
 
 
 struct Angles_Spherical
@@ -196,11 +204,11 @@ private:
     unsigned cameraHfov; // Between 0 and 179, horizontal field of view in degrees
     unsigned resolution_height;
     unsigned resolution_width;
-    std::tuple<float, float, float> sceneAmbientLight; // 
+    rgb sceneAmbientLight; // 
 
 public:
     // Constructor :
-    Camera(Point_3D position = { 0, 0, 0 }, Vector_3D direction = { 0, 1, 0 }, unsigned fov = 90, unsigned res_height = 200, unsigned res_width = 300, std::tuple<float, float, float> ambientLight = { 0.2,0.2,0.2 }) : cameraPosition(position), cameraDirection(direction), cameraHfov(fov), resolution_height(res_height), resolution_width(res_width), sceneAmbientLight(ambientLight) {
+    Camera(Point_3D position = { 0, 0, 0 }, Vector_3D direction = { 0, 1, 0 }, unsigned fov = 90, unsigned res_height = 200, unsigned res_width = 300, rgb ambientLight = { 0.2,0.2,0.2 }) : cameraPosition(position), cameraDirection(direction), cameraHfov(fov), resolution_height(res_height), resolution_width(res_width), sceneAmbientLight(ambientLight) {
         if (cameraHfov > 179) {
             throw std::invalid_argument("horizontal fov must be less than 180 degrees");
         }
@@ -224,7 +232,7 @@ public:
     unsigned get_hfov() const { return cameraHfov; }
     unsigned get_resolution_height() const { return resolution_height; }
     unsigned get_resolution_width() const { return resolution_width; }
-    std::tuple<float, float, float> get_ambient_light() const { return sceneAmbientLight; }
+    rgb get_ambient_light() const { return sceneAmbientLight; }
 
 
     Ray ray_launcher(unsigned pixel_height, unsigned pixel_width) {
@@ -268,12 +276,12 @@ public:
 class Light
 {
     Point_3D position;
-    std::tuple<float, float, float> light_color; // Tuple de float entre 0 et 1
+    rgb light_color; // Tuple de float entre 0 et 1
 protected:
     std::string type = "PointLight";
 public:
     // Constructor
-    Light(Point_3D pos = { 0, 0, 0 }, std::tuple<float, float, float> i = { 1.0,1.0,1.0 }) : position(pos), light_color(i) {
+    Light(Point_3D pos = { 0, 0, 0 }, rgb i = { 1.0,1.0,1.0 }) : position(pos), light_color(i) {
         /*if (intensity <= {0,0,0}) {
             throw std::invalid_argument("The intensity of the light must be positive");
         }
@@ -283,10 +291,10 @@ public:
 
     // Getters
     Point_3D get_position() const { return position; }
-    std::tuple<float, float, float>  get_intensity() const { return light_color; }
+    rgb  get_light_color() const { return light_color; }
 
     // Methods : 
-    std::tuple<float, float, float> compute_PointLight(Point_3D point, Vector_3D normal_vector) const {
+    rgb compute_PointLight(Point_3D point, Vector_3D normal_vector) const {
         // We have a Pointlight and a point on an object and the normal vector at this point
         // We compute the lighting based on the dot product between the normal vector of the surface and the vector from the point to the light
         // It can be negative (part of a sphere in the shadow for example) 
@@ -304,7 +312,7 @@ public:
             return { 0,0,0 };
         }
 
-        std::tuple<float, float, float> lighting_intensity = (light_vector * normal_vector) * light_color;
+        rgb lighting_intensity = (std::abs(light_vector * normal_vector)) * light_color;
         // if (lighting_intensity < 0){
         //     return 0.;
         // }
@@ -320,12 +328,12 @@ class Object
 {
 protected:
     std::string objectShape = "Object";
-    std::tuple<float, float, float> objectColor = { 1,0,0 }; // RGB tuples de float entre 0 et 1
+    rgb objectColor = { 1,0,0 }; // RGB tuples de float entre 0 et 1
     float objectReflectionCoeff = 0.2; // Entre 0 et 1
 public:
     // Getter :
     std::string get_shape() const { return objectShape; }
-    std::tuple<float, float, float> get_color() const { return objectColor; }
+    rgb get_color() const { return objectColor; }
     float get_reflectionCoeff() const { return objectReflectionCoeff; }
     // Methods
 
@@ -356,7 +364,7 @@ class Sphere : public Object
 public:
 
     // Constructor
-    Sphere(Point_3D c, float r, std::tuple<float, float, float> color = { 1,0,0 }, float reflectionCoeff = 0.2) : center(c), radius(r) {
+    Sphere(Point_3D c, float r, rgb color = { 1,0,0 }, float reflectionCoeff = 0.2) : center(c), radius(r) {
         objectShape = "Sphere";
         objectColor = color;
         objectReflectionCoeff = reflectionCoeff;
@@ -416,7 +424,7 @@ class Plane : public Object
     Vector_3D normalVector;
 public:
     // Constructor
-    Plane(Point_3D o, Vector_3D nv, std::tuple<float, float, float> color = { 1,0,0 }, float reflectionCoeff = 0.2) : origin(o), normalVector(nv) {
+    Plane(Point_3D o, Vector_3D nv, rgb color = { 1,0,0 }, float reflectionCoeff = 0.2) : origin(o), normalVector(nv) {
         objectShape = "Plane";
         objectColor = color;
         objectReflectionCoeff = reflectionCoeff;

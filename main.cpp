@@ -1,32 +1,33 @@
 #include <iostream>
 #include <vector>
-#include <list> // cf td 6 ?
+#include <list>
 #include <fstream>
 #include <iostream>
-
-#include "src/scene.hpp"
-#include "src/objects.hpp"
 #include <tuple>
 #include <sstream>
 
+#include "src/scene.hpp"
+#include "src/objects.hpp"
 
-// A partir d'un fichier texte, crée les objets
-int create_scene(std::string fileName, Camera* cam, std::vector<Object*>* objects, std::vector<Light>* lights) {
+
+// A partir d'un fichier texte, crée les objets, les lumières et la caméra
+int create_scene(std::string fileName, Camera* cam, std::vector<Object*>* objects, std::vector<Light*>* lights) {
     std::ifstream file(fileName);
 
     if (!file.is_open()) {
         std::cerr << "Erreur. Impossible d'ouvrir le fichier." << std::endl;
         return -1;
     }
-    std::string objectShape;
-    std::string line;
+
+    std::string objectShape; // Variable qui contiendra le type de l'objet étudié
+    std::string line; // Variable qui contiendra les paramètres de l'objet
     while (std::getline(file, objectShape)) {
-        if (objectShape == "" || objectShape[0] == '#') {
+        if (objectShape == "" || objectShape[0] == '#') { // On peut mettre des commentaires en commençant la ligne par #
             continue;
         }
 
         std::getline(file, line);
-        std::istringstream lineStream(line); // Permet de faire du parsing pour un string
+        std::istringstream lineStream(line); // Permet de faire du parsing pour une string
         std::cout << objectShape << " : ";
 
         if (objectShape == "camera") {
@@ -38,7 +39,7 @@ int create_scene(std::string fileName, Camera* cam, std::vector<Object*>* object
                 std::cout << "pos (" << x << ", " << y << ", " << z << "), dir (" << dx << ", " << dy << ", " << dz << "), fov " << fov << ", resolution " << width << "x" << height << ", couleur ambiante (" << r << ", " << g << ", " << b << ")" << std::endl;
             }
             else {
-                std::cerr << "Erreur. Camera : Format du fichier erronée";
+                std::cerr << "Erreur. Camera : Format du texte erronée\n";
             }
 
         }
@@ -46,12 +47,12 @@ int create_scene(std::string fileName, Camera* cam, std::vector<Object*>* object
             float x, y, z, r, g, b;
             char braceL1, braceR1, braceL2, braceR2;
             if (lineStream >> braceL1 >> x >> y >> z >> braceR1 >> braceL2 >> r >> g >> b >> braceR2) {
-                Light aLight(Point_3D(x, y, z), { r,g,b });
+                Light* aLight = new Light(Point_3D(x, y, z), { r,g,b });
                 lights->push_back(aLight);
                 std::cout << "pos (" << x << ", " << y << ", " << z << "), couleur (" << r << ", " << g << ", " << b << ")" << std::endl;
             }
             else {
-                std::cerr << "Erreur. Light : Format du fichier erronée";
+                std::cerr << "Erreur. Light : Format du texte erronée\n";
             }
         }
 
@@ -64,21 +65,19 @@ int create_scene(std::string fileName, Camera* cam, std::vector<Object*>* object
                 std::cout << "centre (" << x << ", " << y << ", " << z << "), rayon " << radius << " couleur (" << r << ", " << g << ", " << b << ")" << " reflections : " << objectDiffuseReflection << " " << objectSpecularReflection << std::endl;
             }
             else {
-                // Il vaudrait mieux lancer une exception pour indiquer que le format du fichier n'est pas le bon.
-                std::cerr << "Erreur. Sphere : Format du fichier erronée";
+                std::cerr << "Erreur. Sphere : Format du texte erronée\n";
             }
         }
         else if (objectShape == "plane") {
             float xp, yp, zp, xn, yn, zn, r, g, b, objectDiffuseReflection, objectSpecularReflection;
             char braceL1, braceL2, braceR1, braceR2, braceL3, braceR3;
-            if (lineStream >> braceL1 >> xp >> yp >> zp >> braceR1 >> braceL2 >> xn >> yn >> zn >> braceR2 >> braceL3 >> r >> g >> b >> braceR3 >> objectDiffuseReflection >> objectSpecularReflection
-                && braceL1 == '{' && braceR1 == '}' && braceL2 == '{' && braceR2 == '}') {
+            if (lineStream >> braceL1 >> xp >> yp >> zp >> braceR1 >> braceL2 >> xn >> yn >> zn >> braceR2 >> braceL3 >> r >> g >> b >> braceR3 >> objectDiffuseReflection >> objectSpecularReflection) {
                 Plane* aPlane = new Plane(Point_3D(xp, yp, zp), Vector_3D(xn, yn, zn), { r,g,b }, objectDiffuseReflection, objectSpecularReflection);
                 objects->push_back(aPlane);
                 std::cout << "point (" << xp << "," << yp << "," << zp << "), normal : (" << xn << "," << yn << "," << zn << ")" << " couleur (" << r << ", " << g << ", " << b << ")" << " reflections : " << objectDiffuseReflection << " " << objectSpecularReflection << std::endl;
             }
             else {
-                std::cerr << "Erreur. Plane : Format du fichier erronée";
+                std::cerr << "Erreur. Plane : Format du texte erronée\n";
             }
         }
     }
@@ -86,41 +85,31 @@ int create_scene(std::string fileName, Camera* cam, std::vector<Object*>* object
 }
 
 int main(int argc, char** argv) {
-    // Definition of the scene
-
-    //Camera cam(Point_3D(0, 0, 0), Vector_3D(0, 1, 0), 90, 400, 600, { 0,0,0 });
-
-    Camera cam;
-    std::vector<Object*> objects;
-    std::vector<Light> lights;
 
     if (argc != 3) {
         std::cerr << "Erreur. Nombre d'arguments incorrect. Entrez le nom du fichier texte à lire et le nom de fichier de sortie" << std::endl;
         return -1;
     }
-    std::cout << "Fichier : " << argv[1] << std::endl;
-    std::cout << "Fichier de sortie : " << argv[2] << std::endl;
 
+    // Intialisation
+    Camera cam;
+    std::vector<Object*> objects;
+    std::vector<Light*> lights;
+
+    // On crée la scène à partir du fichier texte
     create_scene(std::string(argv[1]), &cam, &objects, &lights);
 
-    std::cout << "lights : " << lights.size() << std::endl;
-
-
-
-    //Sphere sphere1(Point_3D(0, 5, 0), 1, { 1,0.2,0 }, 0.5, 0.5);
-    //Sphere sphere2(Point_3D(0, 10, 1), 1, { 1,1,1 }, 0.5, 0.5);
-    //Plane plan1(Point_3D(0, 0, -1), Vector_3D(0, 0, 1), { 0,0,0 }, 0, 1);
-    //objects.push_back(&sphere2);
-    //objects.push_back(&sphere1);
-    //objects.push_back(&plan1);
-
-
-    //lights.push_back(Light(Point_3D(3, 2, 3), { 0.5, 0, 0 }));
-    //lights.push_back(Light(Point_3D(-3, 2, 3), { 0, 0, 0.5 }));
-    // Ray emission from camera
+    // On crée l'image
     image_creator(&cam, &objects, &lights, std::string(argv[2]));
 
-    // Affichage
+    // On supprime les objets et lumières 
+    for (auto it = objects.begin(); it != objects.end(); it++) {
+        delete* it;
+    }
+    for (auto it = lights.begin(); it != lights.end(); it++) {
+        delete* it;
+    }
+
 
     return 0;
 }

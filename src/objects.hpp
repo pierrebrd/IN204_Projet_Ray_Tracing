@@ -8,19 +8,18 @@ Ce fichier contiendra les classes concernant les rayons et leur suivi
 #include <cmath>
 #include <stdexcept>
 #include <iostream>
-//#include "scene.hpp"
 #include <optional>
 #include <tuple>
 #include <string>
 #include <cstdint>
 
-#define TRESHOLD 0.001f
+#define THRESHOLD 0.001f
 
-using rgb = std::tuple<float, float, float>; // A color, a light, a pixel, etc. is represented by a tuple of 3 floats between 0 and 1
+using rgb = std::tuple<float, float, float>; // Les couleurs, lumières et pixels sont représentés par 3 floats
 
 struct Point_3D
 {
-    // Represents a point in 3D space
+    // Représente un point dans l'espace 3D
     // Champs
     float x;
     float y;
@@ -29,37 +28,27 @@ struct Point_3D
     // Constructeurs
     inline Point_3D(float x_coord, float y_coord, float z_coord) : x(x_coord), y(y_coord), z(z_coord) {}
 
-    //Point_3D(const Vector_3D vector): x(vector.x), y(vector.y), z(vector.z) {}
 
     // Méthodes
     void print() const {
-        std::cout << "Point: (" << x << ", " << y << ", " << z << ")\n";
+        std::cout << "Point: (" << x << ", " << y << ", " << z << ")" << std::endl;
     }
 
-    float distanceTo(Point_3D anotherPoint);
-
-    /* Opérateur de conversion ne fonctionne pas...
-    explicit operator Vector_3D() const{
-        // Conversion de Point_3D en Vector_3D
-        return Vector_3D(x,y,z);
-    }*/
-
-
+    float distanceTo(const Point_3D& anotherPoint) const; // On la déclare ici pour éviter les dépendances circulaires
 };
 
-struct Angles_Spherical; // We declare the class here to avoid circular dependencies
+struct Angles_Spherical; // On la déclare ici pour éviter les dépendances circulaires
 
 
 struct Vector_3D
-{
-    // Represents a vector in 3D space
+{ // Représente un vecteur dans l'espace 3D
     // Champs
     float x;
     float y;
     float z;
 
     // Constructeurs
-        // à partir des coordonnées cartésiennes
+    // à partir des coordonnées cartésiennes
     inline Vector_3D(float x_coord, float y_coord, float z_coord) : x(x_coord), y(y_coord), z(z_coord) {}
 
     // à partir de deux points Point_3D (P2-P1)
@@ -69,7 +58,7 @@ struct Vector_3D
 
     // Méthodes
     float norm() const {
-        // Returns the norm of the vector
+        // Retourne la norme du vecteur
         return std::sqrt(x * x + y * y + z * z);
     }
 
@@ -82,7 +71,7 @@ struct Vector_3D
         return Point_3D(x, y, z);
     }
 
-    Angles_Spherical to_angles() const; // We declare the method here to avoid circular dependencies
+    Angles_Spherical to_angles() const; // On la déclare ici pour éviter les dépendances circulaires
 };
 
 // Opérateurs globaux
@@ -101,14 +90,15 @@ inline Vector_3D operator - (const Vector_3D& aLeftPoint, const Vector_3D& aRigh
     return vector;
 }
 
-inline Point_3D operator + (Point_3D aLeftPoint, const Vector_3D& aRightVector) {
+inline Point_3D operator + (const Point_3D aLeftPoint, const Vector_3D& aRightVector) {
     // Somme d'un point et d'un vecteur
     Point_3D resultPoint = Point_3D(aLeftPoint.x + aRightVector.x, aLeftPoint.y + aRightVector.y, aLeftPoint.z + aRightVector.z);
     return resultPoint;
 }
 
+
 // Fonction pour normaliser un vecteur 
-Vector_3D normalize(Vector_3D vector) {
+Vector_3D normalize(const Vector_3D& vector) {
     float norm = vector.norm();
     if (norm == 0.f) {
         throw std::invalid_argument("The norm of the vector is null, it can not be normalized");
@@ -117,7 +107,7 @@ Vector_3D normalize(Vector_3D vector) {
 
 }
 
-// Opérateurs globaux pour les tuples
+// Opérateurs globaux pour les tuples (notamment pour les tuples rgb)
 inline rgb operator +(const rgb& aLeftTuple, const rgb& aRightTuple) {
     return { std::get<0>(aLeftTuple) + std::get<0>(aRightTuple),std::get<1>(aLeftTuple) + std::get<1>(aRightTuple),std::get<2>(aLeftTuple) + std::get<2>(aRightTuple) };
 }
@@ -134,7 +124,7 @@ inline rgb minTuple(const rgb& tuple1, const rgb& tuple2) {
     return { std::min(std::get<0>(tuple1),std::get<0>(tuple2)),std::min(std::get<1>(tuple1),std::get<1>(tuple2)),std::min(std::get<2>(tuple1),std::get<2>(tuple2)) };
 }
 
-float Point_3D::distanceTo(Point_3D anotherPoint) {
+float Point_3D::distanceTo(const Point_3D& anotherPoint) const {
     return Vector_3D(Point_3D(x, y, z), anotherPoint).norm();
 }
 
@@ -143,9 +133,9 @@ float Point_3D::distanceTo(Point_3D anotherPoint) {
 
 struct Angles_Spherical
 {
-    // Represents the 2 angles between 2 vectors in 3D space using the spherical coordinates
-    float theta; // Angle with the z axis
-    float phi; // Angle with the x axis in the x-y plane
+    // Représente les angles d'un vecteur dans un repère sphérique
+    float theta; // Angle avec l'axe z
+    float phi; // Angle avec l'axe x dans le plan x-y
 
     Angles_Spherical(float t, float p) : theta(t), phi(p) {}
 
@@ -153,14 +143,14 @@ struct Angles_Spherical
         std::cout << "Angles: (" << theta << ", " << phi << ")\n";
     }
 
-    Vector_3D to_vector() const; // We declare the method here to avoid circular dependencies
+    Vector_3D to_vector() const; // On la déclare ici pour éviter les dépendances circulaires
 };
 
-// Methods of Vector_3D and Angles_Spherical :
+// Methods : 
 
 Vector_3D Angles_Spherical::to_vector() const {
-    // Returns the vector corresponding to the angles in spherical coordinates
-    // We don't specify r : the norm of the vector is 1
+    // Retourne le vecteur correspondant aux angles
+    // On ne précise pas la norme du vecteur, elle sera de 1
     float x = std::sin(theta) * std::cos(phi);
     float y = std::sin(theta) * std::sin(phi);
     float z = std::cos(theta);
@@ -169,28 +159,28 @@ Vector_3D Angles_Spherical::to_vector() const {
 }
 
 Angles_Spherical Vector_3D::to_angles() const {
-    // Returns the angles of the vector in spherical coordinates
+    // Retourne les angles correspondant au vecteur
     auto r = norm();
     if (r == 0.f) {
         throw std::invalid_argument("The vector is null, it has no angles");
     }
-    float theta = std::acos(z / r); // Angle with the z axis
-    float phi = std::atan2(y, x); // Angle with the x axis in the x-y plane
+    float theta = std::acos(z / r); // Angle avec l'axe z
+    float phi = std::atan2(y, x); // Angle avec l'axe x dans le plan x-y
     Angles_Spherical angles(theta, phi);
     return angles;
 }
 
 
 class Ray
-{
+{ // représente les rayons de lumière, ayant une origine et une direction
 private:
     Point_3D origin;
     Vector_3D direction;
 
 public:
-    // Constructors
+    // Constructeurs
     Ray(float xo, float yo, float zo, float xd, float yd, float zd) : origin(xo, yo, zo), direction(xd, yd, zd) {}
-    Ray(Point_3D ori, Vector_3D dir) : origin(ori), direction(dir) {};
+    Ray(const Point_3D& ori, const Vector_3D& dir) : origin(ori), direction(dir) {};
 
     // Getters
     Point_3D get_origin() const { return origin; }
@@ -199,18 +189,18 @@ public:
 };
 
 class Camera
-{
+{ // Point de vue de l'image et paramètres de la caméra
 private:
     Point_3D cameraPosition;
     Vector_3D cameraDirection;
-    unsigned cameraHfov; // Between 0 and 179, horizontal field of view in degrees
+    unsigned cameraHfov; // Entre 0 et 180 degrés
     unsigned resolution_height;
     unsigned resolution_width;
-    rgb sceneAmbientLight; // 
+    rgb sceneAmbientLight; // Couleur ambiante de la scène
 
 public:
-    // Constructor :
-    Camera(Point_3D position = { 0.f, 0.f, 0.f }, Vector_3D direction = { 0.f, 1.f, 0.f }, unsigned fov = 90, unsigned res_height = 200, unsigned res_width = 300, rgb ambientLight = { 0.2f,0.2f,0.2f }) : cameraPosition(position), cameraDirection(direction), cameraHfov(fov), resolution_height(res_height), resolution_width(res_width), sceneAmbientLight(ambientLight) {
+    // Constructeur :
+    Camera(const Point_3D& position = { 0.f, 0.f, 0.f }, const Vector_3D& direction = { 0.f, 1.f, 0.f }, unsigned fov = 90, unsigned res_height = 200, unsigned res_width = 300, const rgb& ambientLight = { 0.2f,0.2f,0.2f }) : cameraPosition(position), cameraDirection(direction), cameraHfov(fov), resolution_height(res_height), resolution_width(res_width), sceneAmbientLight(ambientLight) {
         if (cameraHfov > 179) {
             throw std::invalid_argument("horizontal fov must be less than 180 degrees");
         }
@@ -225,9 +215,6 @@ public:
         }
     }
 
-    // Destructor :
-    ~Camera() {}; //default destructor
-
     // Getters :
     Point_3D get_position() const { return cameraPosition; }
     Vector_3D get_direction() const { return cameraDirection; }
@@ -237,23 +224,21 @@ public:
     rgb get_ambient_light() const { return sceneAmbientLight; }
 
 
-    Ray ray_launcher(unsigned pixel_height, unsigned pixel_width) {
-        // Launches a Ray from the camera to the given pixel coordinates. Coordinates start at 0, end at resolution_height-1 and resolution_width-1
-        // TODO : Check that the pixel coordinates are within the resolution, otherwise return an exception
-
-        // The coordinates starts on the bottom left corner
+    Ray ray_launcher(unsigned pixel_height, unsigned pixel_width) const {
+        // Lance un rayon de la caméra vers les coordonnées de pixel données. Les coordonnées commencent à 0 et se terminent à resolution_height-1 et resolution_width-1
+        // Les coordonnées commencent dans le coin inférieur gauche
         Point_3D origin = cameraPosition;
-        // camera::direction defines the center of the image, when pixel_height = resolution_height/2 and pixel_width = resolution_width/2
-        // We consider that the camera is not rotated along the y axis (compared to the default viewing direction along the y axis)
+        // La direction de la caméra définit le centre de l'image, lorsque pixel_height = resolution_height/2 et pixel_width = resolution_width/2
+        // Nous considérons que la caméra n'est pas tournée le long de l'axe y (par rapport à la direction de vue par défaut le long de l'axe y)
 
-        // We need to cast the unsigned to floats to avoid integer division
+        // Nous devons convertir les unsigned en floats pour éviter la division entière
         float hfov_f = static_cast<float>(cameraHfov);
         float resolution_height_f = static_cast<float>(resolution_height);
         float resolution_width_f = static_cast<float>(resolution_width);
-        float vfov_f = hfov_f * resolution_height_f / resolution_width_f; // Vertical field of view in degrees
+        float vfov_f = hfov_f * resolution_height_f / resolution_width_f; // FOV vertical en degrés
 
-        float horizontal_angle = ((hfov_f / 2) * (pixel_width - resolution_width_f / 2 + 0.5f) / (resolution_width / 2)) * M_PI / 180.0f; // In radians. The second resolution_width/2 is integer division
-        float vertical_angle = ((vfov_f / 2) * (pixel_height - resolution_height_f / 2 + 0.5f) / (resolution_height / 2)) * M_PI / 180.0f; // In radians
+        float horizontal_angle = ((hfov_f / 2) * (pixel_width - resolution_width_f / 2 + 0.5f) / (resolution_width / 2)) * M_PI / 180.0f; // Radians
+        float vertical_angle = ((vfov_f / 2) * (pixel_height - resolution_height_f / 2 + 0.5f) / (resolution_height / 2)) * M_PI / 180.0f; // Radians
 
         auto camera_direction_angles = cameraDirection.to_angles();
         float theta = camera_direction_angles.theta - vertical_angle;
@@ -265,34 +250,23 @@ public:
 };
 
 
-// class Light {
-// protected : 
-//     std::string type = "Light";
-// public :
-//     // Function to compute the lightning on a point
-//     virtual float compute_lighting(Point_3D point, Vector_3D normal_vector) const = 0;
-// };
-
-// Pour l'instant, nos lumières sont des points lumineux
-
 class Light
-{
+{ // les lumières sont des points lumineux (sources ponctuelles émettant dans toutes les directions)
     Point_3D position;
     rgb light_color; // Tuple de float entre 0 et 1
 protected:
     std::string type = "PointLight";
 public:
-    // Constructor
-    Light(Point_3D pos = { 0.f, 0.f, 0.f }, rgb i = { 1.0f,1.0f,1.0f }) : position(pos), light_color(i) {}
+    // Constructeur
+    Light(const Point_3D pos = { 0.f, 0.f, 0.f }, const rgb i = { 1.0f,1.0f,1.0f }) : position(pos), light_color(i) {}
     // Getters
     Point_3D get_position() const { return position; }
     rgb  get_light_color() const { return light_color; }
 
     // Methods : 
-    rgb compute_PointLight(Point_3D point, Vector_3D normal_vector) const {
-        // We have a Pointlight and a point on an object and the normal vector at this point
-        // We compute the lighting based on the dot product between the normal vector of the surface and the vector from the point to the light
-        // It can be negative (part of a sphere in the shadow for example) 
+    rgb compute_PointLight(const Point_3D point, const Vector_3D normal_vector) const {
+        // Nous avons une lumière ponctuelle et un point sur un objet ainsi que le vecteur normal à ce point
+        // Nous calculons l'éclairage basé sur le produit scalaire entre le vecteur normal de la surface et le vecteur allant du point à la lumière
         Vector_3D light_vector = Vector_3D(point, position);
         try {
             light_vector = normalize(light_vector);
@@ -301,30 +275,24 @@ public:
             return { 0.f,0.f,0.f };
         }
         try {
-            normal_vector = normalize(normal_vector);
+            Vector_3D normalized_normal_vector = normalize(normal_vector);
+            rgb lighting_intensity = (std::abs(light_vector * normalized_normal_vector)) * light_color;
+            return lighting_intensity;
         }
         catch (std::invalid_argument error) {
             return { 0.f,0.f,0.f };
         }
-
-        rgb lighting_intensity = (std::abs(light_vector * normal_vector)) * light_color;
-        // if (lighting_intensity < 0){
-        //     return 0.f;
-        // }
-        return lighting_intensity;
     }
 
 };
 
-// On pourra implémenter plus tard d'autres type de lumières (directionnelles, cônes, surface, sphère...)
-// Carrément avoir des objets (genre une sphère) émetteurs de lumière ?
 
 class Object
 {
 protected:
     std::string objectShape = "Object";
     rgb objectColor = { 1.f,0.f,0.f }; // RGB tuples de float entre 0 et 1
-    float objectDiffuseReflection = 1.0f; // Réflection diffuse (dans toutes les directions de l'espace)
+    float objectDiffuseReflection = 1.0f; // Réflection diffuse (dans toutes les directions de l'espace) Modèle de lambert
     float objectSpecularReflection = 0.2f; // Réflection spéculaire (effet miroir)
 public:
     // Getters :
@@ -334,24 +302,23 @@ public:
     float get_specularCoeff() const { return objectSpecularReflection; }
 
 
+    // Methodes
 
-    // Methods
-
-    // Method to find the intersection between the object and a ray
+    // Methode pour trouver l'intersection entre un rayon et l'objet
     virtual std::optional<Point_3D> find_intersection(const Ray& myRay) const = 0;
 
-    // Method to compute the normal vector at a point
-    virtual Vector_3D get_normal(Point_3D point) const = 0;
+    // Methode pour trouver le vecteur normal à un point de l'objet
+    virtual Vector_3D get_normal(const Point_3D& point) const = 0;
 
-    Ray determineReflectedRay(Ray myRay, Point_3D pointOfReflection, Vector_3D normal) {
+    Ray determineReflectedRay(const Ray myRay, const Point_3D pointOfReflection, const Vector_3D normal) const {
         // La méthode ne dépend pas de la forme de l'objet mais du vecteur normal à l'objet
         // En notant u le vecteur du rayon incident, w le vecteur du rayon réfléchi et n le vecteur normal à la sphère
         // w = u - 2*(u.n)n
         // Hypothèse : u et n de norme 1
         Point_3D rayOrigin = myRay.get_origin();
         Vector_3D rayDirection = normalize(myRay.get_direction()); // u
-        normal = normalize(normal); // n
-        Vector_3D reflectedRayDirection = rayDirection - 2 * (rayDirection * normal) * normal;
+        Vector_3D normalized_normal = normalize(normal); // n
+        Vector_3D reflectedRayDirection = rayDirection - 2 * (rayDirection * normalized_normal) * normalized_normal;
         return Ray(pointOfReflection, reflectedRayDirection);
     }
 };
@@ -364,15 +331,15 @@ class Sphere : public Object
     float radius;
 public:
 
-    // Constructor
-    Sphere(Point_3D c, float r, rgb color = { 1.f,0.f,0.f }, float diffuseCoeff = 1.f, float specularCoeff = 0.2f) : center(c), radius(r) {
+    // Constructeur
+    Sphere(const Point_3D c, float r, const rgb color = { 1.f,0.f,0.f }, float diffuseCoeff = 1.f, float specularCoeff = 0.2f) : center(c), radius(r) {
         objectShape = "Sphere";
         objectColor = color;
         objectDiffuseReflection = diffuseCoeff;
         objectSpecularReflection = specularCoeff;
     };
 
-    // Methods
+    // Methodes
     std::optional<Point_3D> find_intersection(const Ray& myRay) const {
         Point_3D rayOrigin = myRay.get_origin();
         Vector_3D rayDirection = myRay.get_direction();
@@ -401,11 +368,11 @@ public:
             if (t1 <= 0.f && t2 <= 0.f) { // On est du mauvais côté du rayon si les deux valeurs négatives
                 return std::nullopt;
             }
-            else if (t2 > TRESHOLD) { // Sinon, on prend la positive la plus petite.
+            else if (t2 > THRESHOLD) { // Sinon, on prend la positive la plus petite.
                 t = t2;
             }
-            // t2 < TRESHOLD
-            else if (t1 > TRESHOLD) {
+            // t2 < THRESHOLD
+            else if (t1 > THRESHOLD) {
                 t = t1;
             }
             else {
@@ -416,7 +383,7 @@ public:
         return intersection;
     }
 
-    Vector_3D get_normal(Point_3D point) const {
+    Vector_3D get_normal(const Point_3D& point) const {
         return Vector_3D(center, point);
     }
 
@@ -428,8 +395,8 @@ class Plane : public Object
     Point_3D origin;
     Vector_3D normalVector;
 public:
-    // Constructor
-    Plane(Point_3D o, Vector_3D nv, rgb color = { 1.f,0.f,0.f }, float diffuseCoeff = 1.f, float specularCoeff = 0.2f) : origin(o), normalVector(nv) {
+    // Constructeur
+    Plane(const Point_3D o, const Vector_3D nv, const rgb color = { 1.f,0.f,0.f }, float diffuseCoeff = 1.f, float specularCoeff = 0.2f) : origin(o), normalVector(nv) {
         objectShape = "Plane";
         objectColor = color;
         objectDiffuseReflection = diffuseCoeff;
@@ -448,14 +415,14 @@ public:
         }
 
         float t = (normalVector * (Vector_3D(rayOrigin, origin))) / (normalVector * rayDirection);
-        if (t < TRESHOLD) {
+        if (t < THRESHOLD) {
             return std::nullopt;
         }
         Point_3D intersection = rayOrigin + t * rayDirection;
         return intersection;
     }
 
-    Vector_3D get_normal(Point_3D point) const {
+    Vector_3D get_normal(const Point_3D& point) const {
         return normalVector;
     }
 };

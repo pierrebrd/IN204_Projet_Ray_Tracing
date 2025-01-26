@@ -1,7 +1,6 @@
 #ifndef sceneHPP
 #define sceneHPP
 
-#include "objects.hpp"
 #include <vector>
 #include <iostream>
 #include <fstream>
@@ -11,17 +10,19 @@
 #include <algorithm>
 #include <cstdint>
 
+#include "objects.hpp"
 
-#define DEPTH 4 // Profondeur de réflexion des rayons
 
-std::optional<std::pair<Point_3D, Object*>> findNextIntersection(Ray myRay, std::vector<Object*>* objects) {
+#define DEPTH 20 // Profondeur de réflexion des rayons
+
+std::optional<std::pair<Point_3D, Object*>> findNextIntersection(const Ray& myRay, const std::vector<Object*>* objects) {
     // A partir d'un rayon donné (qui arrive à la caméra), lui associer un RGB en fonction des obstacles que rencontre le rayon.
 
     // Rayon d'ombre
     // On détermine l'intersection la plus proche de la caméra avec un objet
-    std::vector<Object*>::iterator it = objects->begin();
+    std::vector<Object*>::const_iterator it = objects->begin();
     std::optional<Point_3D> closestIntersec = (*it)->find_intersection(myRay);
-    Object* closestObjectPt = *it; // TODO : Vérifier que c'est un itérateur valide genre qu'on n'est pas à la fin du vecteur
+    Object* closestObjectPt = *it;
     while (!closestIntersec.has_value() && it != objects->end()) {
         // On cherche la première intersection non vide
         closestIntersec = (*it)->find_intersection(myRay);
@@ -50,44 +51,42 @@ std::optional<std::pair<Point_3D, Object*>> findNextIntersection(Ray myRay, std:
 
 
 
-// We declare the function here to avoid circular dependencies
-rgb determineLightIntensity(Point_3D intersection, Object* intersected_object, rgb ambient_light, std::vector<Light>* lights, std::vector<Object*>* objects, Ray incidentRay, int depth);
+// On la déclare ici pour éviter les dépendances circulaires
+rgb determineLightIntensity(const Point_3D& intersection, const Object* intersected_object, const rgb& ambient_light, const std::vector<Light*>* lights, const std::vector<Object*>* objects, const Ray& incidentRay, int depth);
 
 
 
-rgb determineLightIntensity_Diffuse(Point_3D intersection, Object* intersected_object, std::vector<Light>* lights, std::vector<Object*>* objects) {
+rgb determineLightIntensity_Diffuse(const Point_3D& intersection, const Object* intersected_object, const std::vector<Light*>* lights, const std::vector<Object*>* objects) {
 
     float diffuseCoeff = intersected_object->get_diffuseCoeff();
-    if (diffuseCoeff == 0.f) { // Pas besoin de faire tous les calculs
+    if (diffuseCoeff == 0.f) { // In s'arrête là, pas besoin de faire tous les calculs
         return { 0.f,0.f,0.f };
     }
 
-    std::vector<Light>::iterator it = lights->begin();
+    std::vector<Light*>::const_iterator it = lights->begin();
 
     Vector_3D normal = intersected_object->get_normal(intersection);
 
     rgb  lightIntensityShadow = { 0.f,0.f,0.f }; // Initialisation
     // Rayons d'ombre
     for (;it != lights->end(); it++) { // Pour chaque source de lumière
-        Ray nextRay(intersection, Vector_3D(intersection, it->get_position()));
+        Ray nextRay(intersection, Vector_3D(intersection, (*it)->get_position()));
         auto nextIntersection = findNextIntersection(nextRay, objects);
         rgb  currentIntensity;
-        if (nextIntersection.has_value() && nextIntersection.value().first.distanceTo(intersection) > TRESHOLD && nextIntersection.value().first.distanceTo(intersection) < it->get_position().distanceTo(intersection)) { // arbitraire de fou
+        if (nextIntersection.has_value() && nextIntersection.value().first.distanceTo(intersection) > THRESHOLD && nextIntersection.value().first.distanceTo(intersection) < (*it)->get_position().distanceTo(intersection)) { // arbitraire de fou
             // Si le rayon rencontre un objet avant la source de lumière
             currentIntensity = { 0.f,0.f,0.f };
         }
         else {
-            currentIntensity = it->compute_PointLight(intersection, normal);
+            currentIntensity = (*it)->compute_PointLight(intersection, normal);
             lightIntensityShadow = lightIntensityShadow + currentIntensity;
         }
     }
     return diffuseCoeff * lightIntensityShadow; // On multiplie par le coefficient de réflexion diffuse
 }
 
-rgb determineLightIntensity_Specular(Point_3D intersection, Object* intersected_object, rgb ambient_light, std::vector<Light>* lights, std::vector<Object*>* objects, Ray incidentRay, int depth) {
-    // Rayon réfléchi
-    // On permet aux rayons de se réflechir une fois. 
-    // A reflection ray is traced in the mirror-reflection direction. The closest object it intersects is what will be seen in the reflection
+rgb determineLightIntensity_Specular(const Point_3D& intersection, const Object* intersected_object, const rgb& ambient_light, const std::vector<Light*>* lights, const std::vector<Object*>* objects, const Ray& incidentRay, int depth) {
+    // Rayon réfléchi comme sur un miroir
 
     if (depth == 0) { // On a atteint la profondeur maximale de calcul
         return { 0.f,0.f,0.f };
@@ -116,10 +115,7 @@ rgb determineLightIntensity_Specular(Point_3D intersection, Object* intersected_
 }
 
 
-
-// TODO : gros poblème, on prend ne comprte la lumière qui arrive sur l'objetsur lequel on rebondit mais pas sa couleur !!!!!!!!
-
-rgb determineLightIntensity(Point_3D intersection, Object* intersected_object, rgb ambient_light, std::vector<Light>* lights, std::vector<Object*>* objects, Ray incidentRay, int depth) {
+rgb determineLightIntensity(const Point_3D& intersection, const Object* intersected_object, const rgb& ambient_light, const std::vector<Light*>* lights, const std::vector<Object*>* objects, const Ray& incidentRay, int depth) {
     if (depth == 0) { // On a atteint la profondeur maximale de calcul
         return { 0.f,0.f,0.f };
     }
@@ -128,15 +124,12 @@ rgb determineLightIntensity(Point_3D intersection, Object* intersected_object, r
 
     rgb lightIntensityShadow = determineLightIntensity_Diffuse(intersection, intersected_object, lights, objects);
     rgb lightIntensityReflection = determineLightIntensity_Specular(intersection, intersected_object, ambient_light, lights, objects, incidentRay, depth);
-    rgb sum = lightIntensityReflection + lightIntensityShadow + ambient_light;
-    //std::cout << std::get<0>(sum) << " " << std::get<1>(sum) << " " << std::get<2>(sum) << std::endl;
-    //return minTuple(sum, { 10.f,10.f,10.f }); // TODO : Enlever le min ? en gros ça ferait qu'o, pourrait rentre l'objet plus lumin,eux qu'il ne l'est réellement, mais il faudrait capper dans la dernière fonction
-    return sum;
+    return (lightIntensityReflection + lightIntensityShadow + ambient_light);
 }
 
 
-rgb compute_color(Ray myRay, Camera* cam, std::vector<Object*>* objects, std::vector<Light>* lights, int depth) {
-    // Function that looks for an intersection and computes the color by recursively calling light functions
+rgb compute_color(const Ray& myRay, const Camera* cam, const std::vector<Object*>* objects, const std::vector<Light*>* lights, int depth) {
+    // Fonction qui cherche une intersection et calcule la couleur en appelant récursivement les fonctions de lumière
     auto nextIntersect = findNextIntersection(myRay, objects);
     if (!nextIntersect.has_value()) {
         return { 0.f,0.f,0.f };
@@ -146,9 +139,7 @@ rgb compute_color(Ray myRay, Camera* cam, std::vector<Object*>* objects, std::ve
         Object* intersected_object = nextIntersect.value().second;
         rgb lightIntensity = determineLightIntensity(intersection, intersected_object, cam->get_ambient_light(), lights, objects, myRay, depth); // On calcule l'intensité lumineuse reçue en considérant la profondeur de calcul
         auto object_color = intersected_object->get_color();
-        //std::cout << "Object color : " << std::get<0>(object_color) << " " << std::get<1>(object_color) << " " << std::get<2>(object_color) << std::endl;
         auto value = lightIntensity * object_color;
-        //std::cout << "Color product : " << std::get<0>(value) << " " << std::get<1>(value) << " " << std::get<2>(value) << std::endl;
         return { lightIntensity * object_color };
 
     }
@@ -156,46 +147,47 @@ rgb compute_color(Ray myRay, Camera* cam, std::vector<Object*>* objects, std::ve
 }
 
 
-void image_creator(Camera* cam, std::vector<Object*>* objects, std::vector<Light>* lights, std::string filename) {
-    // This function creates an image of the scene and saves it as a ppm file
+void image_creator(const Camera* cam, const std::vector<Object*>* objects, const std::vector<Light*>* lights, const std::string& filename) {
+    // Cette fonction crée une image de la scène et la sauvegarde en tant que fichier ppm
 
-    std::ostringstream buffer; //Buffer pour accélerer
+    std::ostringstream buffer; // Buffer pour ne pas faire trop d'I/O
 
+    // Header du fichier ppm
     buffer << "P3" << std::endl;
     buffer << cam->get_resolution_width() << " " << cam->get_resolution_height() << std::endl;
     buffer << "255" << std::endl;
 
-
-
-
     for (unsigned i = 0; i < cam->get_resolution_height(); i++) {
         for (unsigned j = 0; j < cam->get_resolution_width(); j++) {
-            // We lauch the ray from the camera
+
+            // On calcule un rayon depuis la caméra
             Ray initial_Ray = cam->ray_launcher(cam->get_resolution_height() - i - 1, j);
-            // We calculate the color of the pixel 
+
+            // On cherche la couleur associée à ce pixel
             rgb colors = compute_color(initial_Ray, cam, objects, lights, DEPTH);
-            colors = minTuple(colors, { 1.f,1.f,1.f }); // We cap the color to 1
-            //std::cout << "Color : " << std::get<0>(colors) << " " << std::get<1>(colors) << " " << std::get<2>(colors) << std::endl;
-            // We write the color in the file 
+            colors = minTuple(colors, { 1.f,1.f,1.f }); // On cappe les valeurs à 1
+
+            // On écrit les valeurs dans le buffer
             buffer << static_cast<int>(std::get<0>(colors) * 255.) << " " << static_cast<int>(std::get<1>(colors) * 255.) << " " << static_cast<int>(std::get<2>(colors) * 255.) << " ";
         }
+
         buffer << std::endl;
         if (i % 100 == 0) {
-            std::cout << "\rLine " << i << " done";
+            std::cout << "\rLigne " << i << "/" << cam->get_resolution_height() << " calculée";
             std::cout.flush();
         }
     }
 
-    // We open the ppm file as a stream
-    std::ofstream file(filename); // We create the file
+    // On ouvre le fichier et on écrit le buffer dedans
+    std::ofstream file(filename);
 
     if (!file.is_open()) {
-        std::cerr << "Impossible to open the file " << filename << std::endl;
+        std::cerr << "Impossible d'ouvrir le fichier " << filename << std::endl;
         return;
     }
     file << buffer.str();
     file.close();
-    std::cout << "\rThe image has been created and saved as " << filename << std::endl;
+    std::cout << "\rImage sauvegardée : " << filename << std::endl;
     return;
 }
 

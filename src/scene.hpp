@@ -159,21 +159,13 @@ rgb compute_color(Ray myRay, Camera* cam, std::vector<Object*>* objects, std::ve
 void image_creator(Camera* cam, std::vector<Object*>* objects, std::vector<Light>* lights, std::string filename) {
     // This function creates an image of the scene and saves it as a ppm file
 
-    // We open the ppm file as a stream
-    std::ofstream file(filename); // We create the file
-
-    if (!file.is_open()) {
-        std::cerr << "Impossible to open the file " << filename << std::endl;
-        return;
-    }
-
-
-
-    file << "P3" << std::endl;
-    file << cam->get_resolution_width() << " " << cam->get_resolution_height() << std::endl;
-    file << "255" << std::endl;
-
     std::ostringstream buffer; //Buffer pour accélerer
+
+    buffer << "P3" << std::endl;
+    buffer << cam->get_resolution_width() << " " << cam->get_resolution_height() << std::endl;
+    buffer << "255" << std::endl;
+
+
 
 
     for (unsigned i = 0; i < cam->get_resolution_height(); i++) {
@@ -192,6 +184,14 @@ void image_creator(Camera* cam, std::vector<Object*>* objects, std::vector<Light
             std::cout << "\rLine " << i << " done";
             std::cout.flush();
         }
+    }
+
+    // We open the ppm file as a stream
+    std::ofstream file(filename); // We create the file
+
+    if (!file.is_open()) {
+        std::cerr << "Impossible to open the file " << filename << std::endl;
+        return;
     }
     file << buffer.str();
     file.close();

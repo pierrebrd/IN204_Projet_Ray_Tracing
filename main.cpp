@@ -4,8 +4,8 @@
 #include <fstream>
 #include <iostream>
 
-#include "scene.hpp"
-#include "objects.hpp"
+#include "src/scene.hpp"
+#include "src/objects.hpp"
 #include <tuple>
 #include <sstream>
 

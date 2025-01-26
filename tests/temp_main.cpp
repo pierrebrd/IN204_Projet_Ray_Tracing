@@ -3,8 +3,8 @@
 #include <list> // cf td 6 ?
 #include <fstream>
 
-#include "scene.hpp"
-#include "objects.hpp"
+#include "src/scene.hpp"
+#include "src/objects.hpp"
 #include <tuple>
 
 

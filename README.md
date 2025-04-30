@@ -2,6 +2,8 @@
 
 ### Bordeau Pierre & Brisset Arnaud
 
+![résultat](output_images/differentes_boules.png)
+
 Ce projet effectué dans le cadre du cours IN204 est une implémentation en C++ d'un moteur de Ray Tracing. Il est assez élémentaire en terme d'objets et de types de lancés de rayons, mais permet de générer des images avec un éclairage réaliste (et plutôt esthétique).
 
 PS : Nous avons utilisé l'extension Live Share sur VS Code pour pouvoir collaborer en temps réel. Ainsi, une partie des commits attribuées à Pierre contiennent aussi du code attribué à Arnaud.
